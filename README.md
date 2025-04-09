@@ -12,7 +12,7 @@ A robust cross-platform GUI toolkit for PHP that leverages Tcl/Tk via PHP's FFI 
 **Install dependencies:**
 
 ```bash
-composer install developersharif/php-gui
+composer require developersharif/php-gui
 ```
 
 ## Project Structure
