@@ -22,6 +22,12 @@ composer install developersharif/php-gui
   - **ProcessTCL.php**: Wraps the Tcl interpreter via FFI.
   - **Application.php**: Manages the event loop and application lifecycle.
 
+## Supported Platforms
+
+- **Linux**: Fully supported.
+- **Windows**: Fully supported.
+- **macOS**: Coming soon.
+
 ## Architecture Diagram
 
 <img src="./docs/system.svg" style="width:250px" alt="System Architecture Diagram">
