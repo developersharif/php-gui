@@ -1,0 +1,14 @@
+{
+    "name": "developersharif/php-gui",
+    "description": "Cross-platform GUI development package for PHP using Tcl/Tk",
+    "type": "library",
+    "require": {
+        "php": ">=8.1",
+        "ext-ffi": "*"
+    },
+    "autoload": {
+        "psr-4": {
+            "PhpGui\\": "src/"
+        }
+    }
+}
