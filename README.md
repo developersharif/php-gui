@@ -25,7 +25,7 @@ composer require developersharif/php-gui
 ## Supported Platforms
 
 - **Linux**: Fully supported.
-- **Windows**: Fully supported.
+- **Windows**: Coming soon.
 - **macOS**: Coming soon.
 
 ## Architecture Diagram
