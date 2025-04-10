@@ -30,10 +30,10 @@ class ProcessTCL
     {
         $libDir = dirname(__DIR__) . '/src/lib/';
         if (PHP_OS_FAMILY === 'Windows') {
-            $libPath = $libDir . 'tcl86t.dll';
+            $libPath = $libDir . 'windows/bin/tcl86t.dll';
             $libPath = str_replace('/', '\\', $libPath);
         } elseif (PHP_OS_FAMILY === 'Darwin') {
-            $libPath = $libDir . 'libtcl9.0.dylib';
+            $libPath = $libDir . 'libtcl9.0.dylib'; //temporary path for macOS
         } else {
             $libPath = $libDir . 'libtcl8.6.so';
         }
@@ -126,20 +126,21 @@ class ProcessTCL
      */
     private function definePhpCallbackBridge($interp): void
     {
+        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
+        $callbackFile = $tempDir . "/phpgui_callback.txt";
+
         $this->evalTcl('
             namespace eval php {
                 variable callbacks
                 array set callbacks {}
             }
         ');
-        $this->evalTcl('
-            proc php::executeCallback {id} {
-                set f [open "/tmp/phpgui_callback.txt" w]
-                puts $f $id
-                close $f
+        $this->evalTcl("proc php::executeCallback {id} {
+                set f [open \"{$callbackFile}\" w]
+                puts \$f \$id
+                close \$f
                 update
-            }
-        ');
+            }");
     }
 
     /**
