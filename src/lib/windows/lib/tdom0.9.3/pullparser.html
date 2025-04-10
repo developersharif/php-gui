@@ -1,0 +1,186 @@
+<html>
+<head>
+<link rel="stylesheet" href="manpage.css"><title>tDOM manual: pullparser</title><meta name="xsl-processor" content="Jochen Loewer (loewerj@hotmail.com), Rolf Ade (rolf@pointsman.de) et. al."><meta name="generator" content="$RCSfile: tmml-html.xsl,v $ $Revision: 1.11 $"><meta charset="utf-8">
+</head><body>
+<div class="header">
+<div class="navbar" align="center">
+<a href="#SECTid0x557b36ca9910">NAME</a> · <a href="#SECTid0x557b36c13110">SYNOPSIS</a> · <a href="#SECTid0x557b36ca0870">DESCRIPTION </a> · <a href="#SECTid0x557b36cead20">KEYWORDS</a>
+</div><hr class="navsep">
+</div><div class="body">
+  <h2><a name="SECTid0x557b36ca9910">NAME</a></h2><p class="namesection">
+<b class="names">tdom::pullparser - </b><br>Create an XML pull parser command</p>
+
+  <h2><a name="SECTid0x557b36c13110">SYNOPSIS</a></h2><pre class="syntax">package require tdom
+
+    <b class="cmd">tdom::pullparser</b> <i class="m">cmdName</i>  ? -ignorewhitecdata ? 
+    </pre>
+
+  <h2><a name="SECTid0x557b36ca0870">DESCRIPTION </a></h2><p>This command creates XML pull parser commands with a simple
+    API, along the lines of a simple StAX parser. After creation,
+    you've to set an input source, to do anything useful with the pull
+    parser. For this see the methods <i class="m">input</i>, <i class="m">inputchannel</i>
+    and <i class="m">inputfile</i>.</p><p>The parser has always a <i class="m">state</i>. You start parsing the XML
+    data until some next state, do what has to be done and skip again
+    to the next state. XML well-formedness errors along the way will
+    be reported as TCL_ERROR with additional info in the error
+    message.</p><p>The pull parsers don't follow external entities and are XML
+    1.0 only, they know nothing about XML Namespaces. You get the tags
+    and attribute names as in the source. You aren't noticed about
+    comments, processing instructions and external entities; they are
+    silently ignored for you. CDATA Sections are handled as if their
+    content would have been provided without using a CDATA Section.
+    </p><p>On the brighter side is that character entity and attribute
+    default declarations in the internal subset are respected (because
+    of using expat as underlying parser). It is probably somewhat
+    faster than a comperable implementation with the SAX interface.
+    It's a nice programming model. It's a slim interface.
+    </p><p>If the option <i class="m">-ignorewhitecdata</i> is given, the created
+    XML pull parser command will ignore any white space only (' ', \t,
+    \n and \r) text content between START_TAG and START_TAG / END_TAG.
+    The parser won't stop at such input and will create TEXT state
+    events only for not white space only text. </p><p>Not all methods are valid in every state. The parser will raise
+    TCL_ERROR if a method is called in a state the method isn't valid
+    for. Valid methods of the created commands are:</p><dl class="commandlist">
+      
+        <dt><b class="method">state</b></dt>
+        <dd>This method is valid in all parser states. The
+        possible return values and their meanings are:
+        <ul>
+            <li>
+<i class="m">READY</i> - The parser is created or reset, but no
+            input is set.</li>
+            <li>
+<i class="m">START_DOCUMENT</i> - Input is set, parser is ready
+            to start parsing.</li>
+            <li>
+<i class="m">START_TAG</i> - Parser has stopped parsing at a
+            start tag.</li>
+            <li>
+<i class="m">END_TAG</i> - Parser has stopped parsing at an end tag</li>
+            <li>
+<i class="m">TEXT</i> - Parser has stopped parsing to report
+            text between tags.</li>
+            <li>
+<i class="m">END_DOKUMENT</i> - Parser has finished parsing
+            without error.</li>
+            <li>
+<i class="m">PARSE_ERROR</i> - Parser stopped parsing at XML
+            error in input.</li>
+        </ul>
+        </dd>
+      
+
+      
+        <dt>
+<b class="method">input</b> <i class="m">data</i>
+</dt>
+        <dd>This method is only valid in state <i class="m">READY</i>. It
+        prepares the parser to use <i class="m">data</i> as XML input to parse
+        and switches the parser into state START_DOCUMENT.</dd>
+      
+
+      
+        <dt>
+<b class="method">inputchannel</b> <i class="m">channel</i>
+</dt>
+        <dd>This method is only valid in state <i class="m">READY</i>. It
+        prepares the parser to read the XML input to parse out of
+        <i class="m">channel</i> and switches the parser into state START_DOCUMENT.</dd>
+      
+
+      
+        <dt>
+<b class="method">inputfile</b> <i class="m">filename</i>
+</dt>
+        <dd>This method is only valid in state <i class="m">READY</i>. It
+        open <i class="m">filename</i> and prepares the parser to read the XML
+        input to parse out of that file. The method returns TCL_ERROR,
+        if the file could not be open in read mode. Otherwise it
+        switches the parser into state START_DOCUMENT.</dd>
+      
+
+      
+        <dt><b class="method">next</b></dt>
+        <dd>This method is valid in state <i class="m">START_DOCUMENT</i>,
+        <i class="m">START_TAG</i>, <i class="m">END_TAG</i> and <i class="m">TEXT</i>. It continues
+        parsing of the XML input until the next event, which it will
+        return.</dd>
+      
+
+      
+        <dt><b class="method">tag</b></dt>
+        <dd>This method is only valid in states <i class="m">START_TAG</i> and
+        <i class="m">END_TAG</i>. It returns the tag name of the current start
+        or end tag.</dd>
+      
+
+      
+        <dt><b class="method">attributes</b></dt>
+        <dd>This method is only valid in state <i class="m">START_TAG</i>. It
+        returns all attributes of the element in a name value list.</dd>
+      
+
+      
+        <dt><b class="method">text</b></dt>
+        <dd>This method is only valid in state <i class="m">TEXT</i>. It
+        returns the character data of the event. There will be always
+        at most one TEXT event between START_TAG and the next
+        START_TAG or END_TAG event.</dd>
+      
+
+      
+        <dt><b class="method">skip</b></dt>
+        <dd>This method is only valid in state <i class="m">START_TAG</i>. It
+        skips to the corresponding end tag and ignores all events (but
+        not XML parsing errors) on the way and returns the new state
+        END_TAG.</dd>
+      
+
+      
+        <dt>
+<b class="method">find-element</b>  ? tagname ?   ? tagname | -names tagnames ? </dt>
+        <dd>This method is only valid in states
+        <i class="m">START_DOCUMENT</i>, <i class="m">START_TAG</i> and <i class="m">END_TAG</i>. It
+        skips forward until the next element start tag with tag name
+        <i class="m">tagname</i> and returns the new state START_TAG. If a list
+        of tagnames is provided with the <i class="m">-names</i> option, any of
+        the <i class="m">tagnames</i> match. If there isn't such an element the
+        parser stops at the end of the input and returns
+        END_DOCUMENT.</dd>
+      
+
+      
+        <dt><b class="method">reset</b></dt>
+        <dd>This method is valid in all parser states. It resets the
+        parser into READY state and returns that.</dd>
+      
+
+      
+        <dt><b class="method">delete</b></dt>
+        <dd>This method is valid in all parser states. It deletes
+        the parser command.</dd>
+      
+    </dl><p>Miscellaneous methods:</p><dl class="commandlist">
+      
+        <dt><b class="method">line</b></dt>
+        <dd>This method is valid in all parser states except READY
+        and TEXT. It returns the line number of the parsing
+        position.</dd>
+      
+
+      
+        <dt><b class="method">column</b></dt>
+        <dd>This method is valid in all parser states except READY
+        and TEXT. It returns the offset, from the beginning of the
+        current line, of the parsing position.</dd>
+      
+    </dl>
+
+  <h2><a name="SECTid0x557b36cead20">KEYWORDS</a></h2><p class="keywords">
+<a class="keyword" href="keyword-index.html#KW-XML">XML</a>, <a class="keyword" href="keyword-index.html#KW-pull">pull</a>, <a class="keyword" href="keyword-index.html#KW-parsing">parsing</a>
+</p>
+</div><hr class="navsep"><div class="navbar" align="center">
+<a class="navaid" href="index.html">Contents</a> · <a class="navaid" href="category-index.html">Index</a> · <a class="navaid" href="keyword-index.html">Keywords</a> · <a class="navaid" href="http://tdom.org">Repository</a>
+</div>
+</body>
+</html>

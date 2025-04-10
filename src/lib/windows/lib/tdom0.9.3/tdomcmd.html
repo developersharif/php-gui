@@ -1,0 +1,90 @@
+<html>
+<head>
+<link rel="stylesheet" href="manpage.css"><title>tDOM manual: tdom</title><meta name="xsl-processor" content="Jochen Loewer (loewerj@hotmail.com), Rolf Ade (rolf@pointsman.de) et. al."><meta name="generator" content="$RCSfile: tmml-html.xsl,v $ $Revision: 1.11 $"><meta charset="utf-8">
+</head><body>
+<div class="header">
+<div class="navbar" align="center">
+<a href="#SECTid0x5569427af2d0">NAME</a> · <a href="#SECTid0x556942762ce0">SYNOPSIS</a> · <a href="#SECTid0x5569428a4a30">DESCRIPTION</a> · <a href="#SECTid0x55694282bb80">SEE ALSO</a> · <a href="#SECTid0x55694282bf40">KEYWORDS</a>
+</div><hr class="navsep">
+</div><div class="body">
+    <h2><a name="SECTid0x5569427af2d0">NAME</a></h2><p class="namesection">
+<b class="names">tdom - </b><br>tdom is an expat parser object extension to create an in-memory
+DOM tree from the input while parsing.</p>
+
+
+  <h2><a name="SECTid0x556942762ce0">SYNOPSIS</a></h2><pre class="syntax">package require tdom
+
+set parser [expat]
+
+tdom $parser enable</pre>
+
+  <h2><a name="SECTid0x5569428a4a30">DESCRIPTION</a></h2><p>
+<i class="m">tdom</i> adds the C handler set "tdom" to an tcl expat
+parser obj. This handler set builds an in-memory DOM tree out of the input,
+parsed by the parser. A DOM tree created this way behave exactly like a DOM
+tree created by the "dom" command (see there). In fact, tdom is only
+another interface to the same functionality; it uses the code behind the
+<tt class="samp">dom</tt> code for building the DOM tree.</p><dl class="commandlist">
+      
+        <dt>
+<b class="cmd">tdom</b> <i class="m">parserObj</i> <b class="method">enable</b>
+</dt>
+
+        <dd><p>Adds the tdom C handler set to a Tcl expat parser object. Next
+time, the parser parses input, the tdom C handler functions create an in-memory
+DOM tree.</p></dd>
+      
+
+      
+        <dt>
+<b class="cmd">tdom</b> <i class="m">parserObj</i> <b class="method">getdoc</b>
+</dt>
+
+        <dd><p>Returns the DOM tree as domDoc (see there) object.</p></dd>
+      
+
+      
+        <dt>
+<b class="cmd">tdom</b> <i class="m">parserObj</i> <b class="method">setStoreLineColumn</b> ?<i class="m">boolean</i>?</dt>
+
+        <dd><p>See the method <tt class="samp">setStoreLineColumn</tt> of the
+<b class="cmd">dom</b> command.</p></dd>
+      
+
+      
+        <dt>
+<b class="cmd">tdom</b> <i class="m">parserObj</i> <b class="method">remove</b>
+</dt>
+
+        <dd><p>Removes the tdom C handler set from the parser
+object.</p></dd>
+      
+
+      
+        <dt>
+<b class="cmd">tdom</b> <i class="m">parserObj</i> <b class="method">keepEmpties</b>
+</dt>
+
+        <dd><p>See the option <tt class="samp">-keepEmpties</tt> of the <b class="cmd">dom</b> command.</p></dd>
+      
+
+      
+        <dt>
+<b class="cmd">tdom</b> <i class="m">parserObj</i> <b class="method">setExternalEntityResolver</b> <i class="m">script</i>
+</dt>
+        <dd></dd>
+      
+
+    </dl>
+
+  <h2><a name="SECTid0x55694282bb80">SEE ALSO</a></h2><p class="seealso">dom, expat</p>
+
+  <h2><a name="SECTid0x55694282bf40">KEYWORDS</a></h2><p class="keywords">
+<a class="keyword" href="keyword-index.html#KW-DOM">DOM</a>, <a class="keyword" href="keyword-index.html#KW-SAX">SAX</a>, <a class="keyword" href="keyword-index.html#KW-Chandlerset">C handler set</a>
+</p>
+
+</div><hr class="navsep"><div class="navbar" align="center">
+<a class="navaid" href="index.html">Contents</a> · <a class="navaid" href="category-index.html">Index</a> · <a class="navaid" href="keyword-index.html">Keywords</a> · <a class="navaid" href="http://tdom.org">Repository</a>
+</div>
+</body>
+</html>

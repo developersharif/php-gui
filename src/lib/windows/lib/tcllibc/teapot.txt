@@ -1,0 +1,30 @@
+Package tcllibc 0.3.15
+Meta platform win32-x86_64
+Meta build::date 2025-01-11
+Meta generated::by {critcl 3.2} {EC2AMAZ-G7VL5HH$} {critcl 3.2}
+Meta generated::by {EC2AMAZ-G7VL5HH$} {critcl 3.2} {EC2AMAZ-G7VL5HH$}
+Meta generated::by {critcl 3.2} {EC2AMAZ-G7VL5HH$} {critcl 3.2}
+Meta generated::by {EC2AMAZ-G7VL5HH$} {critcl 3.2} {EC2AMAZ-G7VL5HH$}
+Meta generated::by {critcl 3.2} {EC2AMAZ-G7VL5HH$} {critcl 3.2}
+Meta generated::by {EC2AMAZ-G7VL5HH$} {critcl 3.2} {EC2AMAZ-G7VL5HH$}
+Meta generated::by {critcl 3.2} {EC2AMAZ-G7VL5HH$} {critcl 3.2}
+Meta generated::by {EC2AMAZ-G7VL5HH$} {critcl 3.2} {EC2AMAZ-G7VL5HH$}
+Meta generated::by {critcl 3.2} {EC2AMAZ-G7VL5HH$} {critcl 3.2}
+Meta generated::by {EC2AMAZ-G7VL5HH$} {critcl 3.2} {EC2AMAZ-G7VL5HH$}
+Meta generated::by {critcl 3.2} {EC2AMAZ-G7VL5HH$} {critcl 3.2}
+Meta generated::by {EC2AMAZ-G7VL5HH$} {critcl 3.2} {EC2AMAZ-G7VL5HH$}
+Meta generated::by {critcl 3.2} {EC2AMAZ-G7VL5HH$} {critcl 3.2}
+Meta generated::by {EC2AMAZ-G7VL5HH$} {critcl 3.2} {EC2AMAZ-G7VL5HH$}
+Meta generated::date critcl
+Meta require {Tcl 8.2} {Tcl 8.4} {Tcl 8.4} {Tcl 8.4} {Tcl 8.4} {Tcl 8.4}
+Meta require {Tcl 8.2} {Tcl 8.4} {Tcl 8.2} {Tcl 8.2} {Tcl 8.2} {Tcl 8.2}
+Meta require {Tcl 8.4} {Tcl 8.4}
+Meta entrytclcommand {eval [list ::apply {dir {
+    source [file join $dir critcl-rt.tcl]
+    set path [file join $dir [::critcl::runtime::MapPlatform]]
+    set ext [info sharedlibextension]
+    set lib [file join $path "tcllibc$ext"]
+    load $lib Tcllibc
+    package provide tcllibc 0.3.15
+}} $dir]}
+Meta included critcl-rt.tcl win32-x86_64/tcllibc.dll

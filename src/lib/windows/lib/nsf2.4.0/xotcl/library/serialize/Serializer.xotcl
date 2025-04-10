@@ -1,0 +1,4 @@
+# -*- Tcl -*-
+# offer old package name for backward minimal compatibility
+package provide xotcl::serializer 2.4
+package require nx::serializer
