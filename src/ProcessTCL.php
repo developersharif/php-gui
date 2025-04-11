@@ -46,6 +46,8 @@ class ProcessTCL
             int Tcl_Init(void *interp);
             int Tcl_Eval(void *interp, const char *cmd);
             const char* Tcl_GetStringResult(void *interp);
+            const char* Tcl_GetVar(void* interp, const char* varName, int flags);
+            char* Tcl_SetVar(void* interp, const char* varName, const char* newValue, int flags);
         ", $libPath);
     }
 
@@ -66,9 +68,10 @@ class ProcessTCL
      * Evaluates a given Tcl command.
      *
      * @param string $command The Tcl command to execute.
+     * @return mixed The result of the command if successful
      * @throws \RuntimeException if the Tcl command returns an error.
      */
-    public function evalTcl(string $command): void
+    public function evalTcl(string $command)
     {
         $interp = $this->getInterp();
         $result = $this->ffi->Tcl_Eval($interp, $command);
@@ -76,6 +79,7 @@ class ProcessTCL
             $error = $this->ffi->Tcl_GetStringResult($interp);
             throw new \RuntimeException("Tcl Error: " . $error);
         }
+        return $this->getResult();
     }
 
     /**
@@ -89,6 +93,45 @@ class ProcessTCL
         $result = $this->ffi->Tcl_GetStringResult($interp);
         if (is_string($result)) {
             return $result;
+        }
+        return FFI::string($result);
+    }
+
+    /**
+     * Gets the value of a Tcl variable.
+     *
+     * @param string $varName The name of the Tcl variable to get
+     * @return string The value of the Tcl variable
+     */
+    public function getVar(string $varName): string
+    {
+        $interp = $this->getInterp();
+        $result = $this->ffi->Tcl_GetVar($interp, $varName, 0);
+        if (is_string($result)) {
+            return $result;
+        }
+        if ($result === null) {
+            return "";
+        }
+        return FFI::string($result);
+    }
+
+    /**
+     * Sets the value of a Tcl variable.
+     *
+     * @param string $varName The name of the Tcl variable to set
+     * @param string $value The new value for the variable
+     * @return string The new value of the variable
+     */
+    public function setVar(string $varName, string $value): string
+    {
+        $interp = $this->getInterp();
+        $result = $this->ffi->Tcl_SetVar($interp, $varName, $value, 0);
+        if (is_string($result)) {
+            return $result;
+        }
+        if ($result === null) {
+            return "";
         }
         return FFI::string($result);
     }
