@@ -2,7 +2,7 @@
 
 namespace PhpGui\Widget;
 
-use PhpGui\ProcessTCL; 
+use PhpGui\ProcessTCL;
 
 /**
  * Class Button
@@ -10,28 +10,35 @@ use PhpGui\ProcessTCL;
  *
  * @package PhpGui\Widget
  */
-class Button extends AbstractWidget {
+class Button extends AbstractWidget
+{
     private $callback;
 
-    public function __construct(string $parentId, array $options = []) {
-        parent::__construct($parentId, $options); 
+    public function __construct(string $parentId, array $options = [])
+    {
+        parent::__construct($parentId, $options);
         $this->callback = $options['command'] ?? null;
         $this->create();
     }
 
-    protected function create(): void {
+    protected function create(): void
+    {
         $text = $this->options['text'] ?? 'Button';
-        $extra = $this->getOptionString(); 
-        
+        $extra = $this->getOptionString();
+
         if ($this->callback) {
-            ProcessTCL::getInstance()->registerCallback($this->id, $this->callback);
+            ProcessTCL::getInstance()->registerCallback($this->id, function () {
+                call_user_func($this->callback);
+                $this->tcl->evalTcl("update"); // Force widget updates
+            });
             $this->tcl->evalTcl("button .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra} -command {php::executeCallback {$this->id}}");
         } else {
             $this->tcl->evalTcl("button .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra}");
         }
     }
 
-    protected function getOptionString(): string {
+    protected function getOptionString(): string
+    {
         $opts = "";
         foreach ($this->options as $key => $value) {
             if (in_array($key, ['text', 'command'])) {
