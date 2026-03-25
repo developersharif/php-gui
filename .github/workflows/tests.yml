@@ -20,8 +20,8 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction
 
-      - name: Install X11 dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb libx11-6 libxft2 libxss1
+      - name: Install X11 and Tcl/Tk runtime dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb libx11-6 libxft2 libxss1 libtcl8.6 libtk8.6
 
       - name: Run integration test
         run: xvfb-run php tests/index_test.php
