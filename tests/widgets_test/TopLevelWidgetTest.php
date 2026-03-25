@@ -6,8 +6,8 @@ use PhpGui\Widget\TopLevel;
 
 $app = new Application();
 
-$topLevel = new TopLevel(['text' => 'Initial Top Level']);
-echo "TopLevelWidgetTest: TopLevel widget created with text: 'Initial Top Level'\n";
+$topLevel = new TopLevel(['title' => 'Initial Top Level']);
+echo "TopLevelWidgetTest: TopLevel widget created with title: 'Initial Top Level'\n";
 
 $color = $topLevel->chooseColor(); 
 echo "TopLevelWidgetTest: chooseColor returned: $color\n";

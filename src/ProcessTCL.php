@@ -28,18 +28,22 @@ class ProcessTCL
      */
     private function __construct()
     {
-        $libDir = dirname(__DIR__) . '/src/lib/';
+        $libDir = __DIR__ . '/lib/';
         if (PHP_OS_FAMILY === 'Windows') {
             $libPath = $libDir . 'windows/bin/tcl86t.dll';
             $libPath = str_replace('/', '\\', $libPath);
         } elseif (PHP_OS_FAMILY === 'Darwin') {
-            $libPath = $libDir . 'libtcl9.0.dylib'; //temporary path for macOS
+            $libPath = $libDir . 'libtcl9.0.dylib';
         } else {
             $libPath = $libDir . 'libtcl8.6.so';
         }
         if (!file_exists($libPath)) {
             throw new \RuntimeException("TCL library not found at: $libPath");
         }
+
+        // Set TCL_LIBRARY and TK_LIBRARY so Tcl_Init and "package require Tk"
+        // find the bundled script libraries without needing system packages.
+        $this->setupLibraryPaths($libDir);
 
         $this->ffi = FFI::cdef("
             void* Tcl_CreateInterp(void);
@@ -49,6 +53,25 @@ class ProcessTCL
             const char* Tcl_GetVar(void* interp, const char* varName, int flags);
             char* Tcl_SetVar(void* interp, const char* varName, const char* newValue, int flags);
         ", $libPath);
+    }
+
+    /**
+     * Sets up TCL_LIBRARY, TK_LIBRARY, and TCLLIBPATH environment variables
+     * to point at the bundled Tcl/Tk script libraries.
+     */
+    private function setupLibraryPaths(string $libDir): void
+    {
+        $tclScriptDir = $libDir . 'tcl8.6';
+        $tkScriptDir = $libDir . 'tk8.6';
+
+        if (is_dir($tclScriptDir)) {
+            putenv('TCL_LIBRARY=' . $tclScriptDir);
+        }
+        if (is_dir($tkScriptDir)) {
+            putenv('TK_LIBRARY=' . $tkScriptDir);
+            // TCLLIBPATH tells Tcl where to search for package directories (like tk8.6/)
+            putenv('TCLLIBPATH=' . $libDir);
+        }
     }
 
     /**
