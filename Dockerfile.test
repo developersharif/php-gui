@@ -1,5 +1,5 @@
 FROM php:8.1-cli
-
+# Zero Tcl/Tk system dependencies - uses bundled libraries only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libffi-dev libx11-6 libxft2 libxss1 xvfb \
     && docker-php-ext-install ffi \
