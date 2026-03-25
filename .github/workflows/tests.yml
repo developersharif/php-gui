@@ -8,6 +8,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      TCL_VERSION: "8.6.16"
+
     steps:
       - uses: actions/checkout@v4
 
@@ -20,8 +23,39 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction
 
-      - name: Install X11 and Tcl/Tk runtime dependencies
-        run: sudo apt-get update && sudo apt-get install -y xvfb libx11-6 libxft2 libxss1 libtcl8.6 libtk8.6
+      - name: Install build and X11 dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb build-essential libx11-dev libxft-dev libxss-dev
+
+      - name: Build Tcl from source
+        run: |
+          cd /tmp
+          curl -fsSL "https://prdownloads.sourceforge.net/tcl/tcl${TCL_VERSION}-src.tar.gz" -o tcl-src.tar.gz
+          tar xf tcl-src.tar.gz
+          cd tcl${TCL_VERSION}/unix
+          ./configure --prefix=/tmp/tcltk --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Build Tk from source
+        run: |
+          cd /tmp
+          curl -fsSL "https://prdownloads.sourceforge.net/tcl/tk${TCL_VERSION}-src.tar.gz" -o tk-src.tar.gz
+          tar xf tk-src.tar.gz
+          cd tk${TCL_VERSION}/unix
+          ./configure --prefix=/tmp/tcltk --with-tcl=/tmp/tcltk/lib --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Bundle compiled Tcl/Tk into package
+        run: |
+          cp /tmp/tcltk/lib/libtcl8.6.so src/lib/libtcl8.6.so
+          cp /tmp/tcltk/lib/libtk8.6.so src/lib/libtk8.6.so
+          rm -rf src/lib/tcl8.6 src/lib/tk8.6
+          cp -r /tmp/tcltk/lib/tcl8.6 src/lib/tcl8.6
+          cp -r /tmp/tcltk/lib/tk8.6 src/lib/tk8.6
+          chmod 755 src/lib/libtcl8.6.so src/lib/libtk8.6.so
 
       - name: Run tests
         run: |
