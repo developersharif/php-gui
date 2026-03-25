@@ -29,30 +29,64 @@ class ProcessTCL
     private function __construct()
     {
         $libDir = __DIR__ . '/lib/';
-        if (PHP_OS_FAMILY === 'Windows') {
-            $libPath = $libDir . 'windows/bin/tcl86t.dll';
-            $libPath = str_replace('/', '\\', $libPath);
-        } elseif (PHP_OS_FAMILY === 'Darwin') {
-            $libPath = $libDir . 'libtcl9.0.dylib';
-        } else {
-            $libPath = $libDir . 'libtcl8.6.so';
-        }
-        if (!file_exists($libPath)) {
-            throw new \RuntimeException("TCL library not found at: $libPath");
-        }
 
         // Set TCL_LIBRARY and TK_LIBRARY so Tcl_Init and "package require Tk"
         // find the bundled script libraries without needing system packages.
         $this->setupLibraryPaths($libDir);
 
-        $this->ffi = FFI::cdef("
+        $cdef = "
             void* Tcl_CreateInterp(void);
             int Tcl_Init(void *interp);
             int Tcl_Eval(void *interp, const char *cmd);
             const char* Tcl_GetStringResult(void *interp);
             const char* Tcl_GetVar(void* interp, const char* varName, int flags);
             char* Tcl_SetVar(void* interp, const char* varName, const char* newValue, int flags);
-        ", $libPath);
+        ";
+
+        $this->ffi = $this->loadTclLibrary($cdef, $libDir);
+    }
+
+    /**
+     * Tries to load the Tcl shared library, attempting bundled first then system paths.
+     *
+     * @throws \RuntimeException if no loadable Tcl library is found.
+     */
+    private function loadTclLibrary(string $cdef, string $libDir): FFI
+    {
+        $candidates = [];
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            $candidates[] = str_replace('/', '\\', $libDir . 'windows/bin/tcl86t.dll');
+        } elseif (PHP_OS_FAMILY === 'Darwin') {
+            $candidates[] = $libDir . 'libtcl9.0.dylib';
+            $candidates[] = $libDir . 'libtcl8.6.dylib';
+        } else {
+            $candidates[] = $libDir . 'libtcl8.6.so';
+            $candidates[] = '/usr/lib/x86_64-linux-gnu/libtcl8.6.so';
+            $candidates[] = '/usr/lib/aarch64-linux-gnu/libtcl8.6.so';
+            $candidates[] = '/usr/lib64/libtcl8.6.so';
+            $candidates[] = '/usr/lib/libtcl8.6.so';
+            $candidates[] = '/usr/local/lib/libtcl8.6.so';
+        }
+
+        foreach ($candidates as $path) {
+            if (!file_exists($path)) {
+                continue;
+            }
+            try {
+                return FFI::cdef($cdef, $path);
+            } catch (\FFI\Exception $e) {
+                // Bundled binary may be incompatible with this system, try next
+                continue;
+            }
+        }
+
+        throw new \RuntimeException(
+            "TCL library could not be loaded. Install Tcl/Tk for your system:\n" .
+            "  Debian/Ubuntu: sudo apt-get install libtcl8.6 libtk8.6\n" .
+            "  RHEL/CentOS:   sudo yum install tcl tk\n" .
+            "  macOS:         brew install tcl-tk"
+        );
     }
 
     /**

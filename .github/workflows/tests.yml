@@ -20,20 +20,21 @@ jobs:
       - name: Install Composer dependencies
         run: composer install --no-interaction
 
-      - name: Install X11 dependencies
+      - name: Install X11 runtime libraries
         run: sudo apt-get update && sudo apt-get install -y xvfb libx11-6 libxft2 libxss1
 
-      - name: Run integration test
-        run: xvfb-run php tests/index_test.php
-
-      - name: Run widget tests
+      - name: Run tests
         run: |
-          xvfb-run php tests/widgets_test/AdditionalWidgetsTest.php
-          xvfb-run php tests/widgets_test/ButtonTest.php
-          xvfb-run php tests/widgets_test/GeometryTest.php
-          xvfb-run php tests/widgets_test/InputTest.php
-          xvfb-run php tests/widgets_test/LabelTest.php
-          xvfb-run php tests/widgets_test/MenuTest.php
-          xvfb-run php tests/widgets_test/MenubuttonTest.php
-          xvfb-run php tests/widgets_test/MessageTest.php
-          xvfb-run php tests/widgets_test/WindowTest.php
+          Xvfb :99 -screen 0 1024x768x24 &
+          export DISPLAY=:99
+          sleep 1
+          php tests/index_test.php
+          php tests/widgets_test/AdditionalWidgetsTest.php
+          php tests/widgets_test/ButtonTest.php
+          php tests/widgets_test/GeometryTest.php
+          php tests/widgets_test/InputTest.php
+          php tests/widgets_test/LabelTest.php
+          php tests/widgets_test/MenuTest.php
+          php tests/widgets_test/MenubuttonTest.php
+          php tests/widgets_test/MessageTest.php
+          php tests/widgets_test/WindowTest.php
