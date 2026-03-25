@@ -1,0 +1,56 @@
+name: Build Portable Tcl/Tk Libraries
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+
+    env:
+      TCL_VERSION: "8.6.16"
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libx11-dev libxft-dev libxss-dev
+
+      - name: Build Tcl from source
+        run: |
+          cd /tmp
+          curl -fsSL "https://prdownloads.sourceforge.net/tcl/tcl${TCL_VERSION}-src.tar.gz" -o tcl-src.tar.gz
+          tar xf tcl-src.tar.gz
+          cd tcl${TCL_VERSION}/unix
+          ./configure --prefix=/tmp/tcltk --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Build Tk from source
+        run: |
+          cd /tmp
+          curl -fsSL "https://prdownloads.sourceforge.net/tcl/tk${TCL_VERSION}-src.tar.gz" -o tk-src.tar.gz
+          tar xf tk-src.tar.gz
+          cd tk${TCL_VERSION}/unix
+          ./configure --prefix=/tmp/tcltk --with-tcl=/tmp/tcltk/lib --enable-shared
+          make -j$(nproc)
+          make install
+
+      - name: Bundle into src/lib
+        run: |
+          cp /tmp/tcltk/lib/libtcl8.6.so src/lib/libtcl8.6.so
+          cp /tmp/tcltk/lib/libtk8.6.so src/lib/libtk8.6.so
+          rm -rf src/lib/tcl8.6 src/lib/tk8.6
+          cp -r /tmp/tcltk/lib/tcl8.6 src/lib/tcl8.6
+          cp -r /tmp/tcltk/lib/tk8.6 src/lib/tk8.6
+          chmod 755 src/lib/libtcl8.6.so src/lib/libtk8.6.so
+
+      - name: Commit updated libraries
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add src/lib/
+          git commit -m "Update bundled Tcl/Tk ${TCL_VERSION} libraries (built on Ubuntu 20.04)" || echo "No changes"
+          git push
