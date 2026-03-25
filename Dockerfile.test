@@ -1,0 +1,41 @@
+FROM php:8.1-cli
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libffi-dev libx11-6 libxft2 libxss1 xvfb \
+    && docker-php-ext-install ffi \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+WORKDIR /app
+COPY . .
+
+RUN composer install --no-interaction --no-dev
+
+CMD ["sh", "-c", "\
+    Xvfb :99 -screen 0 1024x768x24 & \
+    export DISPLAY=:99 && \
+    sleep 1 && \
+    echo '=== Integration Test ===' && \
+    php tests/index_test.php && \
+    echo '=== AdditionalWidgetsTest ===' && \
+    php tests/widgets_test/AdditionalWidgetsTest.php && \
+    echo '=== ButtonTest ===' && \
+    php tests/widgets_test/ButtonTest.php && \
+    echo '=== GeometryTest ===' && \
+    php tests/widgets_test/GeometryTest.php && \
+    echo '=== InputTest ===' && \
+    php tests/widgets_test/InputTest.php && \
+    echo '=== LabelTest ===' && \
+    php tests/widgets_test/LabelTest.php && \
+    echo '=== MenuTest ===' && \
+    php tests/widgets_test/MenuTest.php && \
+    echo '=== MenubuttonTest ===' && \
+    php tests/widgets_test/MenubuttonTest.php && \
+    echo '=== MessageTest ===' && \
+    php tests/widgets_test/MessageTest.php && \
+    echo '=== WindowTest ===' && \
+    php tests/widgets_test/WindowTest.php && \
+    echo '' && \
+    echo 'ALL TESTS PASSED - Zero Tcl/Tk system packages installed' \
+"]
