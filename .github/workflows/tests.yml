@@ -1,0 +1,39 @@
+name: Tests
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: ffi
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction
+
+      - name: Install X11 dependencies
+        run: sudo apt-get update && sudo apt-get install -y xvfb libx11-6 libxft2 libxss1
+
+      - name: Run integration test
+        run: xvfb-run php tests/index_test.php
+
+      - name: Run widget tests
+        run: |
+          xvfb-run php tests/widgets_test/AdditionalWidgetsTest.php
+          xvfb-run php tests/widgets_test/ButtonTest.php
+          xvfb-run php tests/widgets_test/GeometryTest.php
+          xvfb-run php tests/widgets_test/InputTest.php
+          xvfb-run php tests/widgets_test/LabelTest.php
+          xvfb-run php tests/widgets_test/MenuTest.php
+          xvfb-run php tests/widgets_test/MenubuttonTest.php
+          xvfb-run php tests/widgets_test/MessageTest.php
+          xvfb-run php tests/widgets_test/WindowTest.php
