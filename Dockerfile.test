@@ -1,7 +1,8 @@
 FROM php:8.1-cli
-# Zero Tcl/Tk system dependencies - uses bundled libraries only
+# Zero system dependencies - all Tcl/Tk and X11 libs are bundled
+# Only needs libffi-dev for PHP FFI extension and xvfb for virtual display
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libffi-dev libx11-6 libxft2 libxss1 xvfb \
+    libffi-dev xvfb \
     && docker-php-ext-install ffi \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
@@ -37,5 +38,5 @@ CMD ["sh", "-c", "\
     echo '=== WindowTest ===' && \
     php tests/widgets_test/WindowTest.php && \
     echo '' && \
-    echo 'ALL TESTS PASSED - Zero Tcl/Tk system packages installed' \
+    echo 'ALL TESTS PASSED - Zero system dependencies' \
 "]
