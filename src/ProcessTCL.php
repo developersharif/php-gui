@@ -106,6 +106,14 @@ class ProcessTCL
             // TCLLIBPATH tells Tcl where to search for package directories (like tk8.6/)
             putenv('TCLLIBPATH=' . $libDir);
         }
+
+        // Add bundled X11 libraries to LD_LIBRARY_PATH so libtk can find them
+        $x11Dir = $libDir . 'x11';
+        if (is_dir($x11Dir)) {
+            $current = getenv('LD_LIBRARY_PATH');
+            $newPath = $current ? $x11Dir . ':' . $current : $x11Dir;
+            putenv('LD_LIBRARY_PATH=' . $newPath);
+        }
     }
 
     /**
