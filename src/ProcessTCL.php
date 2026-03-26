@@ -109,12 +109,17 @@ class ProcessTCL
             }
         }
 
-        throw new \RuntimeException(
-            "TCL library could not be loaded. Install Tcl/Tk for your system:\n" .
-            "  Debian/Ubuntu: sudo apt-get install libtcl8.6 libtk8.6\n" .
-            "  RHEL/CentOS:   sudo yum install tcl tk\n" .
-            "  macOS:         brew install tcl-tk"
-        );
+        $msg = "TCL library could not be loaded.\n";
+        if (PHP_OS_FAMILY === 'Windows') {
+            $msg .= "Ensure PHP is 64-bit and matches the bundled DLL architecture.\n";
+            $msg .= "If the issue persists, install Tcl/Tk from https://www.activestate.com/products/tcl/";
+        } else {
+            $msg .= "Install Tcl/Tk for your system:\n";
+            $msg .= "  Debian/Ubuntu: sudo apt-get install libtcl8.6 libtk8.6\n";
+            $msg .= "  RHEL/CentOS:   sudo yum install tcl tk\n";
+            $msg .= "  macOS:         brew install tcl-tk";
+        }
+        throw new \RuntimeException($msg);
     }
 
     /**
@@ -139,6 +144,16 @@ class ProcessTCL
             putenv('TK_LIBRARY=' . $tkScriptDir);
             // TCLLIBPATH tells Tcl where to search for package directories (like tk9.0/ or tk8.6/)
             putenv('TCLLIBPATH=' . $libDir);
+        }
+
+        // Windows: add bundled DLL directory to PATH so tcl86t.dll can find zlib1.dll etc.
+        if (PHP_OS_FAMILY === 'Windows') {
+            $winBinDir = str_replace('/', '\\', $libDir . 'windows/bin');
+            if (is_dir($winBinDir)) {
+                $current = getenv('PATH');
+                $newPath = $current ? $winBinDir . ';' . $current : $winBinDir;
+                putenv('PATH=' . $newPath);
+            }
         }
 
         // Add bundled X11 libraries to LD_LIBRARY_PATH so libtk can find them (Linux)
