@@ -1,19 +1,27 @@
 <?php
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../TestRunner.php';
 
 use PhpGui\Application;
 use PhpGui\Widget\Window;
 use PhpGui\Widget\Message;
+use PhpGuiTest\TestRunner;
 
 $app = new Application();
+TestRunner::suite('MessageTest');
+
 $window = new Window(['title' => 'Message Test']);
+$wid = $window->getId();
 
-// Create a Message widget.
-$message = new Message($window->getId(), ['text' => 'Test Message']);
-echo "MessageTest: Message widget created with text: 'Test Message'\n";
+// Creation — Message creates a toplevel + label inside
+$msg  = new Message($wid, ['text' => 'Test Message']);
+$path = ".{$wid}.{$msg->getId()}";
+TestRunner::assertWidgetExists($path, 'Message toplevel Tcl widget exists after creation');
+TestRunner::assertWidgetExists("{$path}.msg", 'Message inner label widget exists');
 
-// Update the message text.
-$message->setText("Updated Message");
-echo "MessageTest: Message text updated\n";
+// setText
+TestRunner::assertNoThrow(fn() => $msg->setText('Updated Message'), 'setText() does not throw');
+$labelText = trim(\PhpGui\ProcessTCL::getInstance()->evalTcl("{$path}.msg cget -text"));
+TestRunner::assertEqual('Updated Message', $labelText, 'setText() changes inner label text');
 
-$app->quit();
+TestRunner::summary();

@@ -1,28 +1,40 @@
 <?php
 require_once __DIR__ . '/../../vendor/autoload.php';
+require_once __DIR__ . '/../TestRunner.php';
 
 use PhpGui\Application;
 use PhpGui\Widget\Window;
 use PhpGui\Widget\Label;
+use PhpGuiTest\TestRunner;
 
 $app = new Application();
+TestRunner::suite('GeometryTest');
 
-// Create a separate window for pack geometry manager
-$windowPack = new Window(['title' => 'Pack Geometry Test']);
-$labelPack = new Label($windowPack->getId(), ['text' => 'Pack Test']);
-$labelPack->pack(['pady' => 5]);
-echo "GeometryTest: Label packed with pack manager\n";
+// pack
+$wp = new Window(['title' => 'Pack Test']);
+$lp = new Label($wp->getId(), ['text' => 'Pack']);
+TestRunner::assertNoThrow(fn() => $lp->pack(['pady' => 5]), 'pack() does not throw');
+$info = trim(\PhpGui\ProcessTCL::getInstance()->evalTcl("pack info .{$wp->getId()}.{$lp->getId()}"));
+TestRunner::assertNotEmpty($info, 'pack info non-empty after pack()');
 
-// Create a separate window for place geometry manager
-$windowPlace = new Window(['title' => 'Place Geometry Test']);
-$labelPlace = new Label($windowPlace->getId(), ['text' => 'Place Test']);
-$labelPlace->place(['x' => 50, 'y' => 100]);
-echo "GeometryTest: Label placed with place manager\n";
+// place
+$wpl = new Window(['title' => 'Place Test']);
+$ll  = new Label($wpl->getId(), ['text' => 'Place']);
+TestRunner::assertNoThrow(fn() => $ll->place(['x' => 50, 'y' => 100]), 'place() does not throw');
+$placeInfo = trim(\PhpGui\ProcessTCL::getInstance()->evalTcl("place info .{$wpl->getId()}.{$ll->getId()}"));
+TestRunner::assertNotEmpty($placeInfo, 'place info non-empty after place()');
 
-// Create a separate window for grid geometry manager
-$windowGrid = new Window(['title' => 'Grid Geometry Test']);
-$labelGrid = new Label($windowGrid->getId(), ['text' => 'Grid Test']);
-$labelGrid->grid(['row' => 1, 'column' => 0]);
-echo "GeometryTest: Label gridded with grid manager\n";
+// grid
+$wg = new Window(['title' => 'Grid Test']);
+$lg = new Label($wg->getId(), ['text' => 'Grid']);
+TestRunner::assertNoThrow(fn() => $lg->grid(['row' => 0, 'column' => 0]), 'grid() does not throw');
+$gridInfo = trim(\PhpGui\ProcessTCL::getInstance()->evalTcl("grid info .{$wg->getId()}.{$lg->getId()}"));
+TestRunner::assertNotEmpty($gridInfo, 'grid info non-empty after grid()');
 
-$app->quit();
+// Top-level widgets must refuse all geometry managers
+$topWin = new Window(['title' => 'TopLevel Geometry']);
+TestRunner::assertThrows(fn() => $topWin->pack(),  \RuntimeException::class, 'pack() throws on top-level');
+TestRunner::assertThrows(fn() => $topWin->place(), \RuntimeException::class, 'place() throws on top-level');
+TestRunner::assertThrows(fn() => $topWin->grid(),  \RuntimeException::class, 'grid() throws on top-level');
+
+TestRunner::summary();

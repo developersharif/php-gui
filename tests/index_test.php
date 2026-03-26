@@ -1,61 +1,60 @@
 <?php
 require_once __DIR__ . '/../vendor/autoload.php';
+require_once __DIR__ . '/TestRunner.php';
 
 use PhpGui\Application;
 use PhpGui\Widget\Window;
 use PhpGui\Widget\Label;
 use PhpGui\Widget\Button;
 use PhpGui\Widget\Input;
+use PhpGuiTest\TestRunner;
 
 $app = new Application();
+TestRunner::suite('IntegrationTest');
 
-// Create main window
-$window = new Window([
-    'title' => 'Integration Test',
-    'width' => 500,
-    'height' => 300
-]);
+// Window
+$window = new Window(['title' => 'Integration Test', 'width' => 500, 'height' => 300]);
+$wid = $window->getId();
+TestRunner::assertWidgetExists(".{$wid}", 'Main window created');
 
-// Label test
-$label = new Label($window->getId(), [ 
-    'text' => 'Hello, PHP GUI World!'
-]);
+// Label
+$label = new Label($wid, ['text' => 'Hello, PHP GUI World!']);
+$lpath = ".{$wid}.{$label->getId()}";
+TestRunner::assertWidgetExists($lpath, 'Label created');
 $label->pack(['pady' => 20]);
 
-// Button test
-$button = new Button($window->getId(), [
-    'text' => 'Click Me',
-    'command' => function() use ($label) {
-        echo "Button clicked from integration test!\n";
+// Button — callback integration
+$clicked = false;
+$button = new Button($wid, [
+    'text'    => 'Click Me',
+    'command' => function () use ($label, &$clicked) {
+        $clicked = true;
         $label->setText('Button clicked!');
-    }
+    },
 ]);
+$bpath = ".{$wid}.{$button->getId()}";
+TestRunner::assertWidgetExists($bpath, 'Button created');
 $button->pack(['pady' => 10]);
 
-// Input test
-$input = new Input($window->getId(), [
-    'text'  => 'Type here...',
-    'bg'    => 'lightyellow',
-    'fg'    => 'black',
-    'font'  => 'Arial 14'
-]);
+// Simulate the click
+\PhpGui\ProcessTCL::getInstance()->executeCallback($button->getId());
+TestRunner::assert($clicked, 'Button callback fires on trigger');
+$labelText = trim(\PhpGui\ProcessTCL::getInstance()->evalTcl("{$lpath} cget -text"));
+TestRunner::assertEqual('Button clicked!', $labelText, 'Label text updated by button callback');
+
+// Input — getValue/setValue
+$input = new Input($wid, ['text' => 'Type here...']);
+$ipath = ".{$wid}.{$input->getId()}";
+TestRunner::assertWidgetExists($ipath, 'Input created');
+TestRunner::assertEqual('Type here...', $input->getValue(), 'Input initial value correct');
+$input->setValue('Hello from test');
+TestRunner::assertEqual('Hello from test', $input->getValue(), 'Input setValue/getValue roundtrip');
 $input->pack(['pady' => 10]);
 
-// Register Enter key event on input widget
-$input->onEnter(function() use ($input) {
-    echo "Input Enter Pressed (Integration Test): " . $input->getValue() . "\n";
-});
+// onEnter callback
+$entered = false;
+$input->onEnter(function () use (&$entered) { $entered = true; });
+\PhpGui\ProcessTCL::getInstance()->executeCallback($input->getId());
+TestRunner::assert($entered, 'Input onEnter callback fires on trigger');
 
-// Button to show input box value
-$showButton = new Button($window->getId(), [
-    'text' => 'Show Input',
-    'command' => function() use ($input) {
-         echo "Show Input Button clicked (Integration Test): " . $input->getValue() . "\n";
-    }
-]);
-$showButton->pack(['pady' => 10]);
-
-echo "Integration test setup complete.\n";
-
-// End the test without starting the main loop
-$app->quit();
+TestRunner::summary();

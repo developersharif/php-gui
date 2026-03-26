@@ -31,12 +31,15 @@ jobs:
           php tests/index_test.php
           php tests/widgets_test/AdditionalWidgetsTest.php
           php tests/widgets_test/ButtonTest.php
+          php tests/widgets_test/CanvasTest.php
+          php tests/widgets_test/CheckbuttonTest.php
           php tests/widgets_test/GeometryTest.php
           php tests/widgets_test/InputTest.php
           php tests/widgets_test/LabelTest.php
           php tests/widgets_test/MenuTest.php
           php tests/widgets_test/MenubuttonTest.php
           php tests/widgets_test/MessageTest.php
+          php tests/widgets_test/TopLevelWidgetTest.php
           php tests/widgets_test/WindowTest.php
 
   test-macos:
@@ -59,12 +62,15 @@ jobs:
           php tests/index_test.php
           php tests/widgets_test/AdditionalWidgetsTest.php
           php tests/widgets_test/ButtonTest.php
+          php tests/widgets_test/CanvasTest.php
+          php tests/widgets_test/CheckbuttonTest.php
           php tests/widgets_test/GeometryTest.php
           php tests/widgets_test/InputTest.php
           php tests/widgets_test/LabelTest.php
           php tests/widgets_test/MenuTest.php
           php tests/widgets_test/MenubuttonTest.php
           php tests/widgets_test/MessageTest.php
+          php tests/widgets_test/TopLevelWidgetTest.php
           php tests/widgets_test/WindowTest.php
 
   test-windows:
@@ -87,10 +93,13 @@ jobs:
           php tests/index_test.php
           php tests/widgets_test/AdditionalWidgetsTest.php
           php tests/widgets_test/ButtonTest.php
+          php tests/widgets_test/CanvasTest.php
+          php tests/widgets_test/CheckbuttonTest.php
           php tests/widgets_test/GeometryTest.php
           php tests/widgets_test/InputTest.php
           php tests/widgets_test/LabelTest.php
           php tests/widgets_test/MenuTest.php
           php tests/widgets_test/MenubuttonTest.php
           php tests/widgets_test/MessageTest.php
+          php tests/widgets_test/TopLevelWidgetTest.php
           php tests/widgets_test/WindowTest.php
