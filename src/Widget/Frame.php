@@ -8,6 +8,11 @@ namespace PhpGui\Widget;
  * @package PhpGui\Widget
  */
 class Frame extends AbstractWidget {
+    public function __construct(string $parentId, array $options = []) {
+        parent::__construct($parentId, $options);
+        $this->create();
+    }
+
     protected function create(): void {
         $this->tcl->evalTcl("frame .{$this->parentId}.{$this->id}");
     }
