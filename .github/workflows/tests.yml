@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 jobs:
-  test:
+  test-linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -28,6 +28,34 @@ jobs:
           Xvfb :99 -screen 0 1024x768x24 &
           export DISPLAY=:99
           sleep 1
+          php tests/index_test.php
+          php tests/widgets_test/AdditionalWidgetsTest.php
+          php tests/widgets_test/ButtonTest.php
+          php tests/widgets_test/GeometryTest.php
+          php tests/widgets_test/InputTest.php
+          php tests/widgets_test/LabelTest.php
+          php tests/widgets_test/MenuTest.php
+          php tests/widgets_test/MenubuttonTest.php
+          php tests/widgets_test/MessageTest.php
+          php tests/widgets_test/WindowTest.php
+
+  test-macos:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          extensions: ffi
+
+      - name: Install Composer dependencies
+        run: composer install --no-interaction
+
+      - name: Run tests
+        run: |
           php tests/index_test.php
           php tests/widgets_test/AdditionalWidgetsTest.php
           php tests/widgets_test/ButtonTest.php
