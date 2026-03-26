@@ -87,4 +87,14 @@ class Menu extends AbstractWidget
         }
         return implode(' ', $result);
     }
+
+    /**
+     * Destroys the menu widget.
+     * Menu creates its widget at `.{$id}` (not `.{$parent}.{$id}`), so we
+     * override the default AbstractWidget destroy path.
+     */
+    public function destroy(): void
+    {
+        $this->tcl->evalTcl("destroy .{$this->id}");
+    }
 }
