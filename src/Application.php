@@ -30,10 +30,8 @@ class Application
         $this->tcl->evalTcl("package require Tk");
         $this->tcl->evalTcl("wm withdraw .");
 
-
-        $quitFile = (PHP_OS_FAMILY === 'Windows')
-            ? str_replace('\\', '/', sys_get_temp_dir()) . "/phpgui_quit.txt"
-            : "/tmp/phpgui_quit.txt";
+        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
+        $quitFile = $tempDir . "/phpgui_quit.txt";
         $this->tcl->evalTcl("proc ::exit_app {} { set ::forever 1; set f [open \"$quitFile\" w]; puts \$f 1; close \$f }");
     }
 
@@ -50,21 +48,17 @@ class Application
         }
 
         $this->running = true;
+        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
+        $callbackFile = $tempDir . "/phpgui_callback.txt";
+        $quitFile = $tempDir . "/phpgui_quit.txt";
+
         while ($this->running) {
             $this->tcl->evalTcl("update");
-            // Use OS-based callback file path.
-            $callbackFile = (PHP_OS_FAMILY === 'Windows')
-                ? str_replace('\\', '/', sys_get_temp_dir()) . "/phpgui_callback.txt"
-                : "/tmp/phpgui_callback.txt";
             if (file_exists($callbackFile)) {
                 $id = trim(file_get_contents($callbackFile));
                 unlink($callbackFile);
                 ProcessTCL::getInstance()->executeCallback($id);
             }
-            // Use OS-based quit file path.
-            $quitFile = (PHP_OS_FAMILY === 'Windows')
-                ? str_replace('\\', '/', sys_get_temp_dir()) . "/phpgui_quit.txt"
-                : "/tmp/phpgui_quit.txt";
             if (file_exists($quitFile)) {
                 unlink($quitFile);
                 $this->running = false;

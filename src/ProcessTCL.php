@@ -16,6 +16,7 @@ use FFI;
 class ProcessTCL
 {
     private FFI $ffi;
+    private bool $isTcl9;
     private static ?ProcessTCL $instance = null;
     private array $callbacks = []; // registered callbacks
 
@@ -34,7 +35,15 @@ class ProcessTCL
         // find the bundled script libraries without needing system packages.
         $this->setupLibraryPaths($libDir);
 
-        $cdef = "
+        $this->ffi = $this->loadTclLibrary($libDir);
+    }
+
+    /**
+     * Returns the FFI C declarations for Tcl 8.6 (Linux/Windows).
+     */
+    private function getCdefTcl8(): string
+    {
+        return "
             void* Tcl_CreateInterp(void);
             int Tcl_Init(void *interp);
             int Tcl_Eval(void *interp, const char *cmd);
@@ -42,8 +51,23 @@ class ProcessTCL
             const char* Tcl_GetVar(void* interp, const char* varName, int flags);
             char* Tcl_SetVar(void* interp, const char* varName, const char* newValue, int flags);
         ";
+    }
 
-        $this->ffi = $this->loadTclLibrary($cdef, $libDir);
+    /**
+     * Returns the FFI C declarations for Tcl 9.0 (macOS).
+     * Tcl 9 removed Tcl_Eval/Tcl_GetStringResult/Tcl_GetVar/Tcl_SetVar.
+     */
+    private function getCdefTcl9(): string
+    {
+        return "
+            void* Tcl_CreateInterp(void);
+            int Tcl_Init(void *interp);
+            int Tcl_EvalEx(void *interp, const char *cmd, int numBytes, int flags);
+            void* Tcl_GetObjResult(void *interp);
+            const char* Tcl_GetString(void *objPtr);
+            const char* Tcl_GetVar2(void* interp, const char* name1, const char* name2, int flags);
+            char* Tcl_SetVar2(void* interp, const char* name1, const char* name2, const char* newValue, int flags);
+        ";
     }
 
     /**
@@ -51,30 +75,34 @@ class ProcessTCL
      *
      * @throws \RuntimeException if no loadable Tcl library is found.
      */
-    private function loadTclLibrary(string $cdef, string $libDir): FFI
+    private function loadTclLibrary(string $libDir): FFI
     {
+        // Each candidate: [path, isTcl9]
         $candidates = [];
 
         if (PHP_OS_FAMILY === 'Windows') {
-            $candidates[] = str_replace('/', '\\', $libDir . 'windows/bin/tcl86t.dll');
+            $candidates[] = [str_replace('/', '\\', $libDir . 'windows/bin/tcl86t.dll'), false];
         } elseif (PHP_OS_FAMILY === 'Darwin') {
-            $candidates[] = $libDir . 'libtcl9.0.dylib';
-            $candidates[] = $libDir . 'libtcl8.6.dylib';
+            $candidates[] = [$libDir . 'libtcl9.0.dylib', true];
+            $candidates[] = [$libDir . 'libtcl8.6.dylib', false];
         } else {
-            $candidates[] = $libDir . 'libtcl8.6.so';
-            $candidates[] = '/usr/lib/x86_64-linux-gnu/libtcl8.6.so';
-            $candidates[] = '/usr/lib/aarch64-linux-gnu/libtcl8.6.so';
-            $candidates[] = '/usr/lib64/libtcl8.6.so';
-            $candidates[] = '/usr/lib/libtcl8.6.so';
-            $candidates[] = '/usr/local/lib/libtcl8.6.so';
+            $candidates[] = [$libDir . 'libtcl8.6.so', false];
+            $candidates[] = ['/usr/lib/x86_64-linux-gnu/libtcl8.6.so', false];
+            $candidates[] = ['/usr/lib/aarch64-linux-gnu/libtcl8.6.so', false];
+            $candidates[] = ['/usr/lib64/libtcl8.6.so', false];
+            $candidates[] = ['/usr/lib/libtcl8.6.so', false];
+            $candidates[] = ['/usr/local/lib/libtcl8.6.so', false];
         }
 
-        foreach ($candidates as $path) {
+        foreach ($candidates as [$path, $isTcl9]) {
             if (!file_exists($path)) {
                 continue;
             }
+            $cdef = $isTcl9 ? $this->getCdefTcl9() : $this->getCdefTcl8();
             try {
-                return FFI::cdef($cdef, $path);
+                $ffi = FFI::cdef($cdef, $path);
+                $this->isTcl9 = $isTcl9;
+                return $ffi;
             } catch (\FFI\Exception $e) {
                 // Bundled binary may be incompatible with this system, try next
                 continue;
@@ -95,24 +123,37 @@ class ProcessTCL
      */
     private function setupLibraryPaths(string $libDir): void
     {
-        $tclScriptDir = $libDir . 'tcl8.6';
-        $tkScriptDir = $libDir . 'tk8.6';
+        // macOS uses Tcl/Tk 9.0, Linux uses 8.6
+        if (PHP_OS_FAMILY === 'Darwin') {
+            $tclScriptDir = $libDir . 'tcl9.0';
+            $tkScriptDir = $libDir . 'tk9.0';
+        } else {
+            $tclScriptDir = $libDir . 'tcl8.6';
+            $tkScriptDir = $libDir . 'tk8.6';
+        }
 
         if (is_dir($tclScriptDir)) {
             putenv('TCL_LIBRARY=' . $tclScriptDir);
         }
         if (is_dir($tkScriptDir)) {
             putenv('TK_LIBRARY=' . $tkScriptDir);
-            // TCLLIBPATH tells Tcl where to search for package directories (like tk8.6/)
+            // TCLLIBPATH tells Tcl where to search for package directories (like tk9.0/ or tk8.6/)
             putenv('TCLLIBPATH=' . $libDir);
         }
 
-        // Add bundled X11 libraries to LD_LIBRARY_PATH so libtk can find them
+        // Add bundled X11 libraries to LD_LIBRARY_PATH so libtk can find them (Linux)
         $x11Dir = $libDir . 'x11';
         if (is_dir($x11Dir)) {
             $current = getenv('LD_LIBRARY_PATH');
             $newPath = $current ? $x11Dir . ':' . $current : $x11Dir;
             putenv('LD_LIBRARY_PATH=' . $newPath);
+        }
+
+        // macOS: ensure bundled dylibs (libtommath) can be found at runtime
+        if (PHP_OS_FAMILY === 'Darwin') {
+            $current = getenv('DYLD_FALLBACK_LIBRARY_PATH');
+            $newPath = $current ? $libDir . ':' . $current : $libDir;
+            putenv('DYLD_FALLBACK_LIBRARY_PATH=' . $newPath);
         }
     }
 
@@ -139,9 +180,13 @@ class ProcessTCL
     public function evalTcl(string $command)
     {
         $interp = $this->getInterp();
-        $result = $this->ffi->Tcl_Eval($interp, $command);
-        if ($result !== 0) { // Check for errors
-            $error = $this->ffi->Tcl_GetStringResult($interp);
+        if ($this->isTcl9) {
+            $result = $this->ffi->Tcl_EvalEx($interp, $command, -1, 0);
+        } else {
+            $result = $this->ffi->Tcl_Eval($interp, $command);
+        }
+        if ($result !== 0) {
+            $error = $this->getResult();
             throw new \RuntimeException("Tcl Error: " . $error);
         }
         return $this->getResult();
@@ -155,7 +200,12 @@ class ProcessTCL
     public function getResult(): string
     {
         $interp = $this->getInterp();
-        $result = $this->ffi->Tcl_GetStringResult($interp);
+        if ($this->isTcl9) {
+            $objPtr = $this->ffi->Tcl_GetObjResult($interp);
+            $result = $this->ffi->Tcl_GetString($objPtr);
+        } else {
+            $result = $this->ffi->Tcl_GetStringResult($interp);
+        }
         if (is_string($result)) {
             return $result;
         }
@@ -171,7 +221,11 @@ class ProcessTCL
     public function getVar(string $varName): string
     {
         $interp = $this->getInterp();
-        $result = $this->ffi->Tcl_GetVar($interp, $varName, 0);
+        if ($this->isTcl9) {
+            $result = $this->ffi->Tcl_GetVar2($interp, $varName, null, 0);
+        } else {
+            $result = $this->ffi->Tcl_GetVar($interp, $varName, 0);
+        }
         if (is_string($result)) {
             return $result;
         }
@@ -191,7 +245,11 @@ class ProcessTCL
     public function setVar(string $varName, string $value): string
     {
         $interp = $this->getInterp();
-        $result = $this->ffi->Tcl_SetVar($interp, $varName, $value, 0);
+        if ($this->isTcl9) {
+            $result = $this->ffi->Tcl_SetVar2($interp, $varName, null, $value, 0);
+        } else {
+            $result = $this->ffi->Tcl_SetVar($interp, $varName, $value, 0);
+        }
         if (is_string($result)) {
             return $result;
         }
