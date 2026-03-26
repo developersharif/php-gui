@@ -30,7 +30,7 @@ composer require developersharif/php-gui
 
 - **Linux**: ☑️
 - **Windows**: ☑️
-- **macOS**: Coming soon.
+- **macOS**: ☑️
 
 ## Architecture Diagram
 
