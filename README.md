@@ -2,7 +2,6 @@
 
 A robust cross-platform GUI toolkit for PHP that leverages Tcl/Tk via PHP's FFI extension. This library offers a professional API for building graphical interfaces in PHP, seamlessly abstracting Tcl/Tk complexities behind intuitive widget classes.
 
-
 https://github.com/user-attachments/assets/788e6124-5fe0-49c1-a222-c0bb432f509e
 
 
