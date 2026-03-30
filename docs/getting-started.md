@@ -2,7 +2,7 @@
 
 ## Requirements
 
-- **PHP 8.1+** with the [FFI](https://www.php.net/manual/en/intro.ffi.php) extension enabled
+- **PHP 8.1+** with the [FFI](https://www.php.net/manual/en/book.ffi.php) extension enabled
 - **[Composer](https://getcomposer.org/)** for dependency management
 
 ### Enabling FFI
