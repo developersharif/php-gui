@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>PHP GUI - Documentation</title>
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <meta name="description" content="A robust cross-platform GUI toolkit for PHP using Tcl/Tk via FFI">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
+  <style>
+    :root {
+      --theme-color: #7c3aed;
+      --sidebar-nav-link-color--active: #7c3aed;
+      --sidebar-nav-link-border-color--active: #7c3aed;
+      --sidebar-name-color: #7c3aed;
+      --cover-background-color: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      --cover-color: #fff;
+      --code-inline-color: #7c3aed;
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+    window.$docsify = {
+      name: 'PHP GUI',
+      repo: 'developersharif/php-gui',
+      coverpage: true,
+      loadSidebar: true,
+      subMaxLevel: 3,
+      search: {
+        placeholder: 'Search docs...',
+        noData: 'No results found',
+        depth: 6
+      },
+      copyCode: {
+        buttonText: 'Copy',
+        successText: 'Copied'
+      },
+      auto2top: true,
+      homepage: 'home.md'
+    };
+  </script>
+  <!-- Docsify core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+  <!-- Plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code@2"></script>
+  <!-- Syntax highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-php.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+</body>
+</html>
