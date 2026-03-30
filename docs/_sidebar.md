@@ -4,6 +4,7 @@
   - [Architecture](architecture.md)
 
 - **Widgets**
+  - [Common Behaviours](widgets.md)
   - [Window](Window.md)
   - [TopLevel](TopLevel.md)
   - [Button](Button.md)
