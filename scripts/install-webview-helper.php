@@ -128,6 +128,12 @@ function buildFromSourceInstructions(): string
 
 // ── Main ──────────────────────────────────────────────────────────────────
 
+// Skip in CI environments — binary is built from source in a later step
+if (getenv('CI') || getenv('GITHUB_ACTIONS')) {
+    echo "php-gui: Skipping WebView helper download (CI environment detected).\n";
+    exit(0);
+}
+
 echo "php-gui: Installing WebView helper binary...\n";
 
 $binaryName = getBinaryName();
@@ -149,11 +155,12 @@ echo "  Fetching latest release...\n";
 $tag = getLatestReleaseTag();
 
 if ($tag === null) {
-    echo "  WARNING: Could not fetch release info from GitHub.\n";
+    echo "  NOTE: Could not fetch release info from GitHub.\n";
     echo "  This may be due to network issues or no releases published yet.\n";
     echo "\n";
     echo buildFromSourceInstructions();
-    exit(1);
+    // Exit 0 — download is best-effort, not a hard requirement
+    exit(0);
 }
 
 echo "  Release: {$tag}\n";
@@ -165,8 +172,8 @@ if (downloadBinary($tag, $binaryName, $destPath)) {
     exit(0);
 }
 
-// Download failed
-echo "  WARNING: Download failed.\n";
+// Download failed — warn but don't break composer install
+echo "  NOTE: Download failed. The WebView feature requires the helper binary.\n";
 echo "\n";
 echo buildFromSourceInstructions();
-exit(1);
+exit(0);
