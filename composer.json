@@ -10,5 +10,10 @@
         "psr-4": {
             "PhpGui\\": "src/"
         }
+    },
+    "scripts": {
+        "post-install-cmd": "@php scripts/install-webview-helper.php",
+        "post-update-cmd": "@php scripts/install-webview-helper.php",
+        "install-webview": "@php scripts/install-webview-helper.php"
     }
 }

@@ -278,8 +278,22 @@ class ProcessWebView
         $binary = $libDir . "webview_helper_{$os}_{$arch}{$ext}";
 
         if (!file_exists($binary)) {
+            // Try auto-downloading the binary
+            $installer = dirname(__DIR__) . '/scripts/install-webview-helper.php';
+            if (file_exists($installer)) {
+                $exitCode = 0;
+                passthru('php ' . escapeshellarg($installer), $exitCode);
+                if ($exitCode === 0 && file_exists($binary)) {
+                    if ($os !== 'windows' && !is_executable($binary)) {
+                        chmod($binary, 0755);
+                    }
+                    return $binary;
+                }
+            }
+
             $msg = "WebView helper binary not found: {$binary}\n";
-            $msg .= "Build from source: cd src/lib/webview_helper && bash build.sh\n";
+            $msg .= "Run: composer install-webview\n";
+            $msg .= "Or build from source: cd src/lib/webview_helper && bash build.sh\n";
             if ($os === 'linux') {
                 $msg .= "Requires: sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.1-dev\n";
             }
