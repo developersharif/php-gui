@@ -8,6 +8,9 @@ on:
 permissions:
   contents: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
@@ -21,44 +24,37 @@ jobs:
         run: cd src/lib/webview_helper && bash build.sh
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: webview_helper_linux_x86_64
           path: src/lib/webview_helper_linux_x86_64
 
-  build-macos-intel:
-    runs-on: macos-13
-    steps:
-      - uses: actions/checkout@v5
-
-      - name: Install CMake
-        run: brew install cmake || true
-
-      - name: Build helper binary
-        run: cd src/lib/webview_helper && bash build.sh
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v5
-        with:
-          name: webview_helper_darwin_x86_64
-          path: src/lib/webview_helper_darwin_x86_64
-
-  build-macos-arm:
+  build-macos:
     runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - arch: arm64
+            cmake_arch: arm64
+            binary_name: webview_helper_darwin_arm64
+          - arch: x86_64
+            cmake_arch: x86_64
+            binary_name: webview_helper_darwin_x86_64
     steps:
       - uses: actions/checkout@v5
 
-      - name: Install CMake
-        run: brew install cmake || true
-
-      - name: Build helper binary
-        run: cd src/lib/webview_helper && bash build.sh
+      - name: Build helper binary (${{ matrix.arch }})
+        run: |
+          cd src/lib/webview_helper
+          mkdir -p build && cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_OSX_ARCHITECTURES=${{ matrix.cmake_arch }}
+          cmake --build . --config Release
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
-          name: webview_helper_darwin_arm64
-          path: src/lib/webview_helper_darwin_arm64
+          name: ${{ matrix.binary_name }}
+          path: src/lib/${{ matrix.binary_name }}
 
   build-windows:
     runs-on: windows-latest
@@ -75,17 +71,17 @@ jobs:
           cmake --build . --config Release
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v4
         with:
           name: webview_helper_windows_x86_64.exe
           path: src/lib/webview_helper_windows_x86_64.exe
 
   release:
-    needs: [build-linux, build-macos-intel, build-macos-arm, build-windows]
+    needs: [build-linux, build-macos, build-windows]
     runs-on: ubuntu-latest
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v4
         with:
           path: binaries
           merge-multiple: true
@@ -93,8 +89,7 @@ jobs:
       - name: List binaries
         run: ls -la binaries/
 
-      - name: Create GitHub Release
+      - name: Upload binaries to release
         uses: softprops/action-gh-release@v2
         with:
-          generate_release_notes: true
           files: binaries/*
