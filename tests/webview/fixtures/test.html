@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html>
+<head><title>Test Page</title></head>
+<body>
+    <h1 id="heading">Hello from Test</h1>
+    <div id="result"></div>
+    <script>
+    // Used by integration tests to verify evalJs and bind/emit work
+    window.testState = { ready: true, messages: [] };
+
+    onPhpEvent('testEvent', function(data) {
+        window.testState.messages.push(data);
+        document.getElementById('result').textContent = JSON.stringify(data);
+    });
+    </script>
+</body>
+</html>

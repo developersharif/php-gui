@@ -1,0 +1,100 @@
+name: Build WebView Helper Binaries
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y cmake libgtk-3-dev libwebkit2gtk-4.1-dev
+
+      - name: Build helper binary
+        run: cd src/lib/webview_helper && bash build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: webview_helper_linux_x86_64
+          path: src/lib/webview_helper_linux_x86_64
+
+  build-macos-intel:
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install CMake
+        run: brew install cmake || true
+
+      - name: Build helper binary
+        run: cd src/lib/webview_helper && bash build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: webview_helper_darwin_x86_64
+          path: src/lib/webview_helper_darwin_x86_64
+
+  build-macos-arm:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install CMake
+        run: brew install cmake || true
+
+      - name: Build helper binary
+        run: cd src/lib/webview_helper && bash build.sh
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: webview_helper_darwin_arm64
+          path: src/lib/webview_helper_darwin_arm64
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Build helper binary
+        shell: cmd
+        run: |
+          cd src\lib\webview_helper
+          mkdir build
+          cd build
+          cmake .. -DCMAKE_BUILD_TYPE=Release
+          cmake --build . --config Release
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: webview_helper_windows_x86_64.exe
+          path: src/lib/webview_helper_windows_x86_64.exe
+
+  release:
+    needs: [build-linux, build-macos-intel, build-macos-arm, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: binaries
+          merge-multiple: true
+
+      - name: List binaries
+        run: ls -la binaries/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: binaries/*

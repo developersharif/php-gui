@@ -17,6 +17,9 @@ class Application
     private bool $running = false;
     private string $appId;
 
+    /** @var \PhpGui\Widget\WebView[] */
+    private array $webviews = [];
+
     /**
      * Application constructor.
      *
@@ -48,36 +51,75 @@ class Application
         }
 
         $this->running = true;
-        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
-        $callbackFile = $tempDir . "/phpgui_callback.txt";
-        $quitFile = $tempDir . "/phpgui_quit.txt";
 
         while ($this->running) {
-            $this->tcl->evalTcl("update");
-            if (file_exists($callbackFile)) {
-                $id = trim(file_get_contents($callbackFile));
-                unlink($callbackFile);
-                ProcessTCL::getInstance()->executeCallback($id);
-            }
-            if (file_exists($quitFile)) {
-                unlink($quitFile);
-                $this->running = false;
-            }
-            usleep(100000);
+            $this->tick();
+
+            // Adaptive sleep: faster when WebViews are active for better IPC responsiveness
+            usleep(!empty($this->webviews) ? 20000 : 100000);
         }
         $this->quit();
     }
 
     /**
-     * Quits the application.
-     *
-     * Stops the main event loop and exits the application.
+     * Register a WebView to be polled in the event loop.
      */
+    public function addWebView(\PhpGui\Widget\WebView $wv): void
+    {
+        $this->webviews[$wv->getId()] = $wv;
+    }
+
+    /**
+     * Remove a WebView from the event loop.
+     */
+    public function removeWebView(\PhpGui\Widget\WebView $wv): void
+    {
+        unset($this->webviews[$wv->getId()]);
+    }
+
+    /**
+     * Run a single iteration of the event loop (for testing).
+     */
+    public function tick(): void
+    {
+        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
+        $callbackFile = $tempDir . "/phpgui_callback.txt";
+        $quitFile = $tempDir . "/phpgui_quit.txt";
+
+        $this->tcl->evalTcl("update");
+
+        if (file_exists($callbackFile)) {
+            $id = trim(file_get_contents($callbackFile));
+            unlink($callbackFile);
+            ProcessTCL::getInstance()->executeCallback($id);
+        }
+        if (file_exists($quitFile)) {
+            unlink($quitFile);
+            $this->running = false;
+        }
+
+        foreach ($this->webviews as $key => $wv) {
+            if ($wv->isClosed()) {
+                unset($this->webviews[$key]);
+                continue;
+            }
+            $wv->processEvents();
+        }
+    }
+
     public function quit(): void
     {
         if (!$this->running) {
             return;
         }
+
+        // Close all WebView instances
+        foreach ($this->webviews as $wv) {
+            if (!$wv->isClosed()) {
+                $wv->destroy();
+            }
+        }
+        $this->webviews = [];
 
         $this->running = false;
         exit(0);
