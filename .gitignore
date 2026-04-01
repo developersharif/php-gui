@@ -7,3 +7,7 @@
 /tmp/
 /*.tmp
 /lib/
+
+# WebView helper build artifacts
+src/lib/webview_helper/build/
+src/lib/webview_helper_*
