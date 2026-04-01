@@ -72,6 +72,58 @@ The library bundles native Tcl/Tk binaries for all platforms, so no system insta
 | Windows | `tcl86t.dll`, `tk86t.dll` |
 | macOS | `libtcl9.0.dylib`, `libtk9.0.dylib` |
 
+## WebView Architecture <sup>Beta</sup>
+
+The WebView widget uses a **helper process** model instead of FFI. A small native binary hosts the platform's browser engine and communicates with PHP over JSON-over-stdio IPC.
+
+```
+PHP Application
+    ↓
+WebView Widget (PHP)
+    ↓ JSON/stdio IPC
+webview_helper binary (C++)
+    ↓
+Platform Browser Engine
+    ├── WebKitGTK (Linux)
+    ├── WKWebView (macOS)
+    └── WebView2 (Windows)
+```
+
+### Key differences from Tcl/Tk widgets
+
+| Aspect         | Tcl/Tk Widgets              | WebView                         |
+|----------------|-----------------------------|---------------------------------|
+| Rendering      | Native Tk controls          | HTML/CSS/JS in browser engine   |
+| Bridge         | FFI (in-process)            | Separate helper process + IPC   |
+| Base class     | Extends `AbstractWidget`    | Standalone (no inheritance)     |
+| Communication  | Tcl commands                | JSON messages over stdin/stdout |
+
+### IPC Protocol
+
+Messages are newline-delimited JSON objects with a `version` field:
+
+```json
+{"version":1,"cmd":"navigate","url":"https://example.com"}
+{"version":1,"event":"ready"}
+{"version":1,"event":"command","name":"greet","id":"0","args":"[\"Alice\"]"}
+```
+
+- **Commands** (PHP → Helper): `navigate`, `set_html`, `set_title`, `set_size`, `eval`, `init`, `bind`, `unbind`, `return`, `emit`, `ping`, `destroy`
+- **Events** (Helper → PHP): `ready`, `closed`, `command`, `error`, `pong`
+
+### Helper Binary
+
+The helper binary is platform-specific and auto-downloaded from GitHub Releases on first use:
+
+| Platform      | Binary                              |
+|---------------|-------------------------------------|
+| Linux x86_64  | `webview_helper_linux_x86_64`       |
+| macOS ARM     | `webview_helper_darwin_arm64`       |
+| macOS Intel   | `webview_helper_darwin_x86_64`      |
+| Windows x64   | `webview_helper_windows_x86_64.exe` |
+
+If auto-download fails, build from source: `cd src/lib/webview_helper && bash build.sh`
+
 ## Namespace & Autoloading
 
 The project uses PSR-4 autoloading:
