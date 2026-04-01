@@ -19,6 +19,9 @@
   - [Combobox](Combobox.md)
   - [Message](Message.md)
 
+- **WebView** <sup>Beta</sup>
+  - [WebView Widget](WebView.md)
+
 - **Examples**
   - [Full Example](example.md)
 
