@@ -25,6 +25,8 @@ extern "C" {
 #ifdef _WIN32
 #include <windows.h>
 #include <process.h>
+#include <io.h>
+#include <fcntl.h>
 #else
 #include <pthread.h>
 #include <unistd.h>
@@ -312,13 +314,12 @@ typedef struct {
 } app_config;
 
 static app_config parse_args(int argc, char *argv[]) {
-    app_config cfg = {
-        .title  = "WebView",
-        .width  = 800,
-        .height = 600,
-        .debug  = 0,
-        .url    = NULL,
-    };
+    app_config cfg;
+    cfg.title  = "WebView";
+    cfg.width  = 800;
+    cfg.height = 600;
+    cfg.debug  = 0;
+    cfg.url    = NULL;
 
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--title") == 0 && i + 1 < argc) {
