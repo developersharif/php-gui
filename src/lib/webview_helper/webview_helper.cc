@@ -37,6 +37,34 @@ extern "C" {
 static webview_t w = NULL;
 static volatile int g_shutdown = 0;
 
+/* Registry for binding name allocations (so unbind can free them) */
+#define MAX_BINDINGS 256
+static char *binding_names[MAX_BINDINGS];
+static int binding_count = 0;
+
+static void binding_registry_add(char *name) {
+    if (binding_count < MAX_BINDINGS) {
+        binding_names[binding_count++] = name;
+    }
+}
+
+static void binding_registry_remove(const char *name) {
+    for (int i = 0; i < binding_count; i++) {
+        if (strcmp(binding_names[i], name) == 0) {
+            free(binding_names[i]);
+            binding_names[i] = binding_names[--binding_count];
+            return;
+        }
+    }
+}
+
+static void binding_registry_free_all(void) {
+    for (int i = 0; i < binding_count; i++) {
+        free(binding_names[i]);
+    }
+    binding_count = 0;
+}
+
 #ifdef _WIN32
 static CRITICAL_SECTION stdout_cs;
 #define STDOUT_LOCK()   EnterCriticalSection(&stdout_cs)
@@ -186,14 +214,17 @@ static void dispatch_command(webview_t wv, void *arg) {
     } else if (strcmp(cmd, "bind") == 0) {
         const char *name = cJSON_GetStringValue(cJSON_GetObjectItem(root, "name"));
         if (name) {
-            /* Duplicate the name string — it must outlive this function */
             char *name_copy = strdup(name);
+            binding_registry_add(name_copy);
             webview_bind(wv, name, on_bound_call, name_copy);
         }
 
     } else if (strcmp(cmd, "unbind") == 0) {
         const char *name = cJSON_GetStringValue(cJSON_GetObjectItem(root, "name"));
-        if (name) webview_unbind(wv, name);
+        if (name) {
+            webview_unbind(wv, name);
+            binding_registry_remove(name);
+        }
 
     } else if (strcmp(cmd, "return") == 0) {
         const char *id     = cJSON_GetStringValue(cJSON_GetObjectItem(root, "id"));
@@ -208,19 +239,24 @@ static void dispatch_command(webview_t wv, void *arg) {
         const char *event   = cJSON_GetStringValue(cJSON_GetObjectItem(root, "event"));
         const char *payload = cJSON_GetStringValue(cJSON_GetObjectItem(root, "payload"));
         if (event) {
-            /* Build JS: window.__phpEmit('eventName', <payload>) */
+            /* JSON-encode the event name to prevent JS injection via quotes/backslashes */
+            cJSON *event_json = cJSON_CreateString(event);
+            char *event_safe = cJSON_PrintUnformatted(event_json);
+            /* event_safe is already a quoted JSON string, e.g. "\"my-event\"" */
             char *js = NULL;
             if (payload) {
-                size_t len = strlen(event) + strlen(payload) + 64;
+                size_t len = strlen(event_safe) + strlen(payload) + 64;
                 js = (char *)malloc(len);
-                snprintf(js, len, "window.__phpEmit('%s', %s);", event, payload);
+                snprintf(js, len, "window.__phpEmit(%s, %s);", event_safe, payload);
             } else {
-                size_t len = strlen(event) + 64;
+                size_t len = strlen(event_safe) + 64;
                 js = (char *)malloc(len);
-                snprintf(js, len, "window.__phpEmit('%s', null);", event);
+                snprintf(js, len, "window.__phpEmit(%s, null);", event_safe);
             }
             webview_eval(wv, js);
             free(js);
+            free(event_safe);
+            cJSON_Delete(event_json);
         }
 
     } else if (strcmp(cmd, "ping") == 0) {
@@ -243,7 +279,7 @@ static void dispatch_command(webview_t wv, void *arg) {
 
 /* ── Reader thread: reads JSON commands from stdin ───────────────────────── */
 
-#define LINE_BUF_SIZE 65536
+#define LINE_BUF_SIZE 1048576  /* 1 MiB — supports large HTML payloads via set_html */
 
 #ifdef _WIN32
 static unsigned __stdcall reader_thread_func(void *arg) {
@@ -394,6 +430,7 @@ int main(int argc, char *argv[]) {
 
     webview_destroy(w);
     w = NULL;
+    binding_registry_free_all();
 
     /*
      * The reader thread may be blocked on fgets(stdin). There is no

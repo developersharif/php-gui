@@ -51,44 +51,16 @@ class Application
         }
 
         $this->running = true;
-        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
-        $callbackFile = $tempDir . "/phpgui_callback.txt";
-        $quitFile = $tempDir . "/phpgui_quit.txt";
 
         while ($this->running) {
-            $this->tcl->evalTcl("update");
-            if (file_exists($callbackFile)) {
-                $id = trim(file_get_contents($callbackFile));
-                unlink($callbackFile);
-                ProcessTCL::getInstance()->executeCallback($id);
-            }
-            if (file_exists($quitFile)) {
-                unlink($quitFile);
-                $this->running = false;
-            }
-
-            // Poll all active WebView instances
-            $hasActiveWebViews = false;
-            foreach ($this->webviews as $key => $wv) {
-                if ($wv->isClosed()) {
-                    unset($this->webviews[$key]);
-                    continue;
-                }
-                $wv->processEvents();
-                $hasActiveWebViews = true;
-            }
+            $this->tick();
 
             // Adaptive sleep: faster when WebViews are active for better IPC responsiveness
-            usleep($hasActiveWebViews ? 20000 : 100000);
+            usleep(!empty($this->webviews) ? 20000 : 100000);
         }
         $this->quit();
     }
 
-    /**
-     * Quits the application.
-     *
-     * Stops the main event loop and exits the application.
-     */
     /**
      * Register a WebView to be polled in the event loop.
      */
