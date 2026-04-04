@@ -20,10 +20,6 @@ class WebView
     private string $id;
     private bool $debug;
 
-    /** @var resource|null PHP built-in server process for serveDirectory() */
-    private $serverProcess = null;
-    private ?int $serverPort = null;
-
     /** @var array<string, callable> JS→PHP command handlers: name => callback(string $id, string $args) */
     private array $commandHandlers = [];
 
@@ -84,74 +80,6 @@ class WebView
     public function setHtml(string $html): void
     {
         $this->process->sendCommand(['cmd' => 'set_html', 'html' => $html]);
-    }
-
-    /**
-     * Serve a directory via PHP's built-in web server and navigate to it.
-     *
-     * Ideal for loading production frontend builds (e.g., Vite's dist/ folder).
-     *
-     * @param string $path Path to the directory containing index.html
-     * @param int $port Port to use (0 = auto-pick a free port)
-     */
-    public function serveDirectory(string $path, int $port = 0): void
-    {
-        $path = realpath($path);
-        if (!$path || !is_dir($path)) {
-            throw new \RuntimeException("Directory not found: {$path}");
-        }
-        if (!file_exists($path . '/index.html')) {
-            throw new \RuntimeException("No index.html found in: {$path}");
-        }
-
-        // Auto-pick a free port
-        if ($port === 0) {
-            $sock = @stream_socket_server('tcp://127.0.0.1:0', $errno, $errstr);
-            if (!$sock) {
-                throw new \RuntimeException("Could not find a free port: {$errstr}");
-            }
-            $addr = stream_socket_get_name($sock, false);
-            $port = (int) substr($addr, strrpos($addr, ':') + 1);
-            fclose($sock);
-        }
-
-        // Start PHP built-in server
-        $cmd = sprintf(
-            '%s -S 127.0.0.1:%d -t %s',
-            PHP_BINARY,
-            $port,
-            escapeshellarg($path)
-        );
-
-        $descriptors = [
-            0 => ['pipe', 'r'],
-            1 => ['pipe', 'w'],
-            2 => ['pipe', 'w'],
-        ];
-
-        $this->serverProcess = proc_open($cmd, $descriptors, $pipes);
-        if (!is_resource($this->serverProcess)) {
-            throw new \RuntimeException("Failed to start local server on port {$port}");
-        }
-        $this->serverPort = $port;
-
-        // Close stdin, we don't need it
-        fclose($pipes[0]);
-        fclose($pipes[1]);
-        fclose($pipes[2]);
-
-        // Wait for server to be ready (up to 3 seconds)
-        $deadline = microtime(true) + 3.0;
-        while (microtime(true) < $deadline) {
-            $fp = @fsockopen('127.0.0.1', $port, $errno, $errstr, 0.1);
-            if ($fp) {
-                fclose($fp);
-                break;
-            }
-            usleep(50000); // 50ms
-        }
-
-        $this->navigate("http://127.0.0.1:{$port}");
     }
 
     /**
@@ -310,14 +238,6 @@ class WebView
 JS);
     }
 
-    /**
-     * Get the port of the local server started by serveDirectory().
-     */
-    public function getServerPort(): ?int
-    {
-        return $this->serverPort;
-    }
-
     /* ── Window ──────────────────────────────────────────────────────────── */
 
     /**
@@ -425,7 +345,6 @@ JS);
      */
     public function destroy(): void
     {
-        $this->stopServer();
         $this->process->close();
     }
 
@@ -564,7 +483,6 @@ JS);
 
     public function __destruct()
     {
-        $this->stopServer();
         if (!$this->isClosed()) {
             $this->destroy();
         }
@@ -653,22 +571,4 @@ JS);
         return [$status, $resHeaders, $resBody];
     }
 
-    private function stopServer(): void
-    {
-        if ($this->serverProcess && is_resource($this->serverProcess)) {
-            $status = proc_get_status($this->serverProcess);
-            if ($status['running']) {
-                // Kill the server process tree
-                $pid = $status['pid'];
-                if (PHP_OS_FAMILY === 'Windows') {
-                    exec("taskkill /F /T /PID {$pid} 2>NUL");
-                } else {
-                    exec("kill {$pid} 2>/dev/null");
-                }
-            }
-            proc_close($this->serverProcess);
-            $this->serverProcess = null;
-            $this->serverPort = null;
-        }
-    }
 }
