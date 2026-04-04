@@ -19,9 +19,32 @@ FetchContent_MakeAvailable(webview)
 add_executable(webview_helper webview_helper.cc cJSON.c)
 target_link_libraries(webview_helper PRIVATE webview::core)
 
-# Platform-specific threading
+# Platform-specific threading and custom URI scheme support
 if(UNIX AND NOT APPLE)
     target_link_libraries(webview_helper PRIVATE pthread)
+
+    # WebKitGTK headers needed for phpgui:// custom URI scheme (serve_dir)
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(WEBKIT2GTK webkit2gtk-4.1)
+    if(NOT WEBKIT2GTK_FOUND)
+        pkg_check_modules(WEBKIT2GTK webkit2gtk-4.0)
+    endif()
+    if(WEBKIT2GTK_FOUND)
+        target_include_directories(webview_helper PRIVATE ${WEBKIT2GTK_INCLUDE_DIRS})
+    endif()
+
+elseif(APPLE)
+    # The serve_dir macOS implementation calls [WKWebView loadFileURL:allowingReadAccessToURL:]
+    # which requires Objective-C++ message syntax. Tell Clang to compile the .cc
+    # file as Objective-C++ without renaming it.
+    set_source_files_properties(webview_helper.cc PROPERTIES
+        COMPILE_OPTIONS "-x;objective-c++"
+    )
+    target_link_libraries(webview_helper PRIVATE
+        "-framework WebKit"
+        "-framework Foundation"
+        "-framework AppKit"
+    )
 endif()
 
 # Determine platform and arch for output naming
