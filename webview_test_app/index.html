@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhpGui WebView Todo App</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface-color: #1e293b;
+            --surface-color-hover: #334155;
+            --primary-color: #3b82f6;
+            --primary-color-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --danger-color: #ef4444;
+            --danger-color-hover: #dc2626;
+            --success-color: #22c55e;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-color), #020617);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        header {
+            text-align: center;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(to right, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.025em;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+            font-size: 1rem;
+        }
+
+        .controls-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+            padding-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+        }
+
+        button {
+            background: var(--surface-color);
+            color: var(--text-main);
+            border: 1px solid var(--glass-border);
+            padding: 0.75rem 1rem;
+            border-radius: 12px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        button:hover {
+            background: var(--surface-color-hover);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+
+        button.primary {
+            background: var(--primary-color);
+            border-color: var(--primary-color);
+        }
+
+        button.primary:hover {
+            background: var(--primary-color-hover);
+            border-color: var(--primary-color-hover);
+        }
+
+        .todo-input-container {
+            display: flex;
+            gap: 1rem;
+            position: relative;
+        }
+
+        .todo-input-container input {
+            flex-grow: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--glass-border);
+            padding: 1rem 1.5rem;
+            border-radius: 16px;
+            color: var(--text-main);
+            font-size: 1.1rem;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        .todo-input-container input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+        }
+
+        .todo-input-container input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .add-btn {
+            padding: 1rem 2rem;
+            border-radius: 16px;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .todos {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Custom Scrollbar */
+        .todos::-webkit-scrollbar {
+            width: 6px;
+        }
+        .todos::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 10px;
+        }
+        .todos::-webkit-scrollbar-thumb {
+            background: var(--surface-color-hover);
+            border-radius: 10px;
+        }
+
+        .todo-item {
+            display: flex;
+            align-items: center;
+            background: var(--surface-color);
+            padding: 1.25rem;
+            border-radius: 16px;
+            border: 1px solid transparent;
+            transition: all 0.2s ease;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .todo-item:hover {
+            border-color: var(--glass-border);
+            transform: translateX(4px);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .todo-checkbox {
+            appearance: none;
+            -webkit-appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--text-muted);
+            border-radius: 6px;
+            margin-right: 1.25rem;
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .todo-checkbox:checked {
+            background: var(--success-color);
+            border-color: var(--success-color);
+        }
+
+        .todo-checkbox:checked::after {
+            content: '\f00c';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: white;
+            font-size: 12px;
+        }
+
+        .todo-text {
+            flex-grow: 1;
+            font-size: 1.1rem;
+            transition: all 0.2s ease;
+        }
+
+        .todo-item.completed .todo-text {
+            color: var(--text-muted);
+            text-decoration: line-through;
+        }
+
+        .delete-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            padding: 0.5rem;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            opacity: 0;
+        }
+
+        .todo-item:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger-color);
+            transform: scale(1.1);
+            box-shadow: none;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface-color);
+            border: 1px solid var(--glass-border);
+            color: var(--text-main);
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            transform: translateY(100px);
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .toast i {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Tasks</h1>
+        <p class="subtitle">Testing all features of PhpGui WebView Widget</p>
+    </header>
+
+    <div class="controls-grid">
+        <button onclick="changeTitle()"><i class="fas fa-heading"></i> Change Title</button>
+        <button onclick="resizeWindow()"><i class="fas fa-expand"></i> Resize Window</button>
+        <button onclick="triggerAlert()"><i class="fas fa-bell"></i> Eval Alert</button>
+        <button onclick="showInfo()"><i class="fas fa-info-circle"></i> InitJS Test</button>
+    </div>
+
+    <form id="todoForm" class="todo-input-container">
+        <input type="text" id="todoInput" placeholder="Add a new task..." autocomplete="off">
+        <button type="submit" class="primary add-btn">
+            <i class="fas fa-plus"></i> Add
+        </button>
+    </form>
+
+    <ul class="todos" id="todoList">
+        <!-- Rendered by JS -->
+    </ul>
+</div>
+
+<div class="toast" id="toast">
+    <i class="fas fa-info-circle"></i>
+    <span id="toastMsg">Notification</span>
+</div>
+
+<script>
+    // Elements
+    const form = document.getElementById('todoForm');
+    const input = document.getElementById('todoInput');
+    const list = document.getElementById('todoList');
+    
+    // Load initial todos
+    async function loadTodos() {
+        try {
+            const todos = await invoke('getTodos');
+            renderTodos(todos);
+        } catch (e) {
+            console.error('Failed to load todos:', e);
+            showToast('Failed to load tasks', true);
+        }
+    }
+
+    // Render list
+    function renderTodos(todos) {
+        list.innerHTML = '';
+        todos.forEach(todo => {
+            const li = document.createElement('li');
+            li.className = `todo-item ${todo.completed ? 'completed' : ''}`;
+            
+            li.innerHTML = `
+                <input type="checkbox" class="todo-checkbox" ${todo.completed ? 'checked' : ''} onchange="toggleTodo('${todo.id}')">
+                <span class="todo-text">${escapeHtml(todo.text)}</span>
+                <button class="delete-btn" onclick="deleteTodo('${todo.id}')"><i class="fas fa-trash"></i></button>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    // Add todo
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const text = input.value.trim();
+        if (!text) return;
+        
+        try {
+            await invoke('addTodo', text);
+            input.value = '';
+            showToast('Task added successfully');
+        } catch (e) {
+            console.error(e);
+        }
+    });
+
+    // Toggle todo
+    async function toggleTodo(id) {
+        try {
+            await invoke('toggleTodo', id);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // Delete todo
+    async function deleteTodo(id) {
+        try {
+            await invoke('deleteTodo', id);
+            showToast('Task deleted');
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // Listen to updates from PHP
+    onPhpEvent('todosUpdated', function(todos) {
+        console.log('Got updated todos from PHP!', todos);
+        renderTodos(todos);
+    });
+
+    // Utilities
+    function escapeHtml(unsafe) {
+        return unsafe.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+    }
+    
+    let toastTimeout;
+    function showToast(message, isError = false) {
+        const toast = document.getElementById('toast');
+        const msg = document.getElementById('toastMsg');
+        const icon = toast.querySelector('i');
+        
+        msg.textContent = message;
+        icon.className = isError ? 'fas fa-exclamation-circle' : 'fas fa-check-circle';
+        icon.style.color = isError ? 'var(--danger-color)' : 'var(--success-color)';
+        
+        toast.classList.add('show');
+        clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    // Webview Features Tests
+    async function changeTitle() {
+        const titles = ["My Awesome App", "PhpGui is Cool", "WebView Test"];
+        const randomTitle = titles[Math.floor(Math.random() * titles.length)];
+        await invoke('setTitle', randomTitle);
+        showToast('Window title changed');
+    }
+
+    async function resizeWindow() {
+        const w = 800 + Math.floor(Math.random() * 400);
+        const h = 600 + Math.floor(Math.random() * 200);
+        await invoke('setSize', w, h);
+        showToast(`Window resized to ${w}x${h}`);
+    }
+
+    async function triggerAlert() {
+        await invoke('evalAlert');
+    }
+    
+    function showInfo() {
+        // Checking if AppConfig injected by initJs exists
+        if (window.AppConfig) {
+            alert(`AppConfig version: ${window.AppConfig.version}`);
+        } else {
+            alert("AppConfig not found. initJs might have failed.");
+        }
+    }
+
+    // Init
+    loadTodos();
+</script>
+</body>
+</html>
