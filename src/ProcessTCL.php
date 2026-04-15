@@ -75,6 +75,11 @@ class ProcessTCL
      *
      * @throws \RuntimeException if no loadable Tcl library is found.
      */
+    /**
+     * Tries to load the Tcl shared library, attempting bundled first then system paths.
+     *
+     * @throws \RuntimeException if no loadable Tcl library is found.
+     */
     private function loadTclLibrary(string $libDir): FFI
     {
         // Each candidate: [path, isTcl9]
@@ -86,7 +91,15 @@ class ProcessTCL
             $candidates[] = [$libDir . 'libtcl9.0.dylib', true];
             $candidates[] = [$libDir . 'libtcl8.6.dylib', false];
         } else {
+            // Bundled library first (zero-dependency).
+            // The bundled libtcl8.6.so was rebuilt on Ubuntu 24.04 (glibc 2.39) so it
+            // links directly against libc.so.6 — no separate libpthread.so.0/libdl.so.2.
+            // On older glibc (< 2.34) FFI::cdef() will throw FFI\Exception because the
+            // library requires newer symbol versions; that is caught below and the system
+            // library is tried instead.
             $candidates[] = [$libDir . 'libtcl8.6.so', false];
+
+            // System library fallback (multi-arch + common paths)
             $candidates[] = ['/usr/lib/x86_64-linux-gnu/libtcl8.6.so', false];
             $candidates[] = ['/usr/lib/aarch64-linux-gnu/libtcl8.6.so', false];
             $candidates[] = ['/usr/lib64/libtcl8.6.so', false];
@@ -104,20 +117,20 @@ class ProcessTCL
                 $this->isTcl9 = $isTcl9;
                 return $ffi;
             } catch (\FFI\Exception $e) {
-                // Bundled binary may be incompatible with this system, try next
                 continue;
             }
         }
 
-        $msg = "TCL library could not be loaded.\n";
+        $msg = "Tcl library could not be loaded.\n";
         if (PHP_OS_FAMILY === 'Windows') {
             $msg .= "Ensure PHP is 64-bit and matches the bundled DLL architecture.\n";
             $msg .= "If the issue persists, install Tcl/Tk from https://www.activestate.com/products/tcl/";
+        } elseif (PHP_OS_FAMILY !== 'Darwin') {
+            $msg .= "Install Tcl/Tk:\n";
+            $msg .= "  Debian/Ubuntu: sudo apt-get install tcl8.6 tk8.6\n";
+            $msg .= "  RHEL/Fedora:   sudo dnf install tcl tk";
         } else {
-            $msg .= "Install Tcl/Tk for your system:\n";
-            $msg .= "  Debian/Ubuntu: sudo apt-get install libtcl8.6 libtk8.6\n";
-            $msg .= "  RHEL/CentOS:   sudo yum install tcl tk\n";
-            $msg .= "  macOS:         brew install tcl-tk";
+            $msg .= "Install Tcl/Tk: brew install tcl-tk";
         }
         throw new \RuntimeException($msg);
     }
