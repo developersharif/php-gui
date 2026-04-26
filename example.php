@@ -9,6 +9,7 @@ use PhpGui\Widget\Button;
 use PhpGui\Widget\Input;
 use PhpGui\Widget\TopLevel;
 use PhpGui\Widget\Menu;
+use PhpGui\Widget\Image;
 
 
 $app = new Application();
@@ -85,6 +86,29 @@ $updateButton = new Button($window->getId(), [
     }
 ]);
 $updateButton->pack(['pady' => 5]);
+
+
+// Image widget example — load a PNG and swap it on demand.
+$logo = new Image($window->getId(), [
+    'path'   => __DIR__ . '/assets/happy-cat.gif',
+    'relief' => 'sunken',
+    'padx'   => 4,
+    'pady'   => 4,
+]);
+$logo->pack(['pady' => 10]);
+
+$swapImageButton = new Button($window->getId(), [
+    'text'    => 'Swap image',
+    'command' => function () use ($logo, $dynamicLabel) {
+        // Reuse the bundled fixture so this button works out of the box.
+        $alt = __DIR__ . '/tests/widgets_test/image/example.jpg';
+        if (is_file($alt)) {
+            $logo->setPath($alt);
+            $dynamicLabel->setText("Image swapped — {$logo->getWidth()}x{$logo->getHeight()}");
+        }
+    }
+]);
+$swapImageButton->pack(['pady' => 5]);
 
 
 // Menu Examples
