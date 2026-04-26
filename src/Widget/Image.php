@@ -526,23 +526,6 @@ TCL
 
     protected function getOptionString(): string
     {
-        $opts = '';
-        foreach ($this->options as $key => $value) {
-            if ($key === 'path') {
-                continue;
-            }
-            // Quote with `"` and escape the four characters Tcl interprets
-            // inside double quotes: backslash, dollar (var sub), open bracket
-            // (command sub), and closing quote. Brace-quoting was rejected
-            // because a trailing `\` in the value produces `{value\}`, where
-            // `\}` is read as a literal `}` and never closes the group.
-            $safe  = str_replace(
-                ['\\', '$', '[', '"'],
-                ['\\\\', '\\$', '\\[', '\\"'],
-                (string) $value
-            );
-            $opts .= " -{$key} \"{$safe}\"";
-        }
-        return $opts;
+        return $this->buildOptionString(['path']);
     }
 }

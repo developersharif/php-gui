@@ -97,6 +97,11 @@ abstract class AbstractWidget
     public function destroy(): void
     {
         $this->tcl->evalTcl("destroy {$this->tclPath}");
+        // Best-effort: a widget that registered a callback under its own id
+        // (Button, Checkbutton, Input via onEnter) is freed here. Widgets
+        // that register additional ids (Menu's per-item ids) override this
+        // to clean those up too.
+        $this->tcl->unregisterCallback($this->id);
         unset(self::$registry[$this->id]);
     }
 
@@ -119,6 +124,50 @@ abstract class AbstractWidget
             $formatted[] = "-$key $value";
         }
         return implode(' ', $formatted);
+    }
+
+    /**
+     * Quote a string for safe inclusion inside a Tcl command.
+     *
+     * Tcl interprets four characters inside a `"`-quoted word: backslash
+     * (escape), dollar (variable substitution), open bracket (command
+     * substitution), and the closing quote. Escape exactly those and the
+     * value can never break out of its quoting, so user-supplied text like
+     * `Hello"; destroy .; "` becomes a literal label rather than executing
+     * the embedded `destroy` command.
+     *
+     * Brace-quoting was rejected because a value ending in a backslash
+     * produces `{value\}` where `\}` reads as a literal `}` and never
+     * closes the group, raising "unbalanced braces" instead.
+     */
+    public static function tclQuote(string $value): string
+    {
+        $escaped = str_replace(
+            ['\\', '$', '[', '"'],
+            ['\\\\', '\\$', '\\[', '\\"'],
+            $value
+        );
+        return '"' . $escaped . '"';
+    }
+
+    /**
+     * Build the trailing `-key "value"` portion of a Tcl widget command
+     * from `$this->options`, skipping keys the caller handles separately.
+     * Every value is run through tclQuote() so user-supplied data can't
+     * inject arbitrary Tcl.
+     *
+     * @param list<string> $skip option keys handled by the caller
+     */
+    protected function buildOptionString(array $skip = []): string
+    {
+        $parts = [];
+        foreach ($this->options as $key => $value) {
+            if (in_array($key, $skip, true)) {
+                continue;
+            }
+            $parts[] = '-' . $key . ' ' . self::tclQuote((string) $value);
+        }
+        return $parts === [] ? '' : ' ' . implode(' ', $parts);
     }
 
     private function requireNonTopLevel(string $manager): void
