@@ -19,7 +19,7 @@ class Canvas extends AbstractWidget
     protected function create(): void
     {
         $extra = $this->getOptionString();
-        $this->tcl->evalTcl("canvas .{$this->parentId}.{$this->id} {$extra}");
+        $this->tcl->evalTcl("canvas {$this->tclPath} {$extra}");
     }
 
     protected function getOptionString(): string
@@ -34,35 +34,35 @@ class Canvas extends AbstractWidget
     public function drawLine(int $x1, int $y1, int $x2, int $y2, array $options = []): string
     {
         $optStr = $this->formatOptions($options);
-        return (string) $this->tcl->evalTcl(".{$this->parentId}.{$this->id} create line $x1 $y1 $x2 $y2 $optStr");
+        return (string) $this->tcl->evalTcl("{$this->tclPath} create line $x1 $y1 $x2 $y2 $optStr");
     }
 
     public function drawRectangle(int $x1, int $y1, int $x2, int $y2, array $options = []): string
     {
         $optStr = $this->formatOptions($options);
-        return (string) $this->tcl->evalTcl(".{$this->parentId}.{$this->id} create rectangle $x1 $y1 $x2 $y2 $optStr");
+        return (string) $this->tcl->evalTcl("{$this->tclPath} create rectangle $x1 $y1 $x2 $y2 $optStr");
     }
 
     public function drawOval(int $x1, int $y1, int $x2, int $y2, array $options = []): string
     {
         $optStr = $this->formatOptions($options);
-        return (string) $this->tcl->evalTcl(".{$this->parentId}.{$this->id} create oval $x1 $y1 $x2 $y2 $optStr");
+        return (string) $this->tcl->evalTcl("{$this->tclPath} create oval $x1 $y1 $x2 $y2 $optStr");
     }
 
     public function drawText(int $x, int $y, string $text, array $options = []): string
     {
         $optStr = $this->formatOptions($options);
-        return (string) $this->tcl->evalTcl(".{$this->parentId}.{$this->id} create text $x $y -text {$text} $optStr");
+        return (string) $this->tcl->evalTcl("{$this->tclPath} create text $x $y -text {$text} $optStr");
     }
 
     public function delete(string $itemId): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} delete $itemId");
+        $this->tcl->evalTcl("{$this->tclPath} delete $itemId");
     }
 
     public function clear(): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} delete all");
+        $this->tcl->evalTcl("{$this->tclPath} delete all");
     }
 
     protected function formatOptions(array $options): string

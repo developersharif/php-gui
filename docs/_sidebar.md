@@ -13,6 +13,7 @@
   - [Entry](Entry.md)
   - [Frame](Frame.md)
   - [Canvas](Canvas.md)
+  - [Image](Image.md)
   - [Menu](Menu.md)
   - [Menubutton](Menubutton.md)
   - [Checkbutton](Checkbutton.md)

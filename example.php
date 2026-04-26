@@ -3,224 +3,309 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 use PhpGui\Application;
+use PhpGui\ProcessTCL;
 use PhpGui\Widget\Window;
 use PhpGui\Widget\Label;
 use PhpGui\Widget\Button;
 use PhpGui\Widget\Input;
 use PhpGui\Widget\TopLevel;
 use PhpGui\Widget\Menu;
-
+use PhpGui\Widget\Image;
+use PhpGui\Widget\Frame;
 
 $app = new Application();
 
-// Create main window
 $window = new Window([
-    'title' => 'Hello World Example in php',
-    'width' => 800,
-    'height' => 600
+    'title'  => 'PHP GUI — Widget Showcase',
+    'width'  => 920,
+    'height' => 620,
+]);
+$wid = $window->getId();
+$tcl = ProcessTCL::getInstance();
+
+// Layout uses three section Frames, each owning its own pack-stacked
+// children. Frames are placed on the window via grid:
+//
+//   row 0: title           (columnspan 3)
+//   row 1: [inputs frame] [image frame] [dialogs frame]
+//   row 2: status bar      (columnspan 3)
+//
+// Equal column weights with the `same` uniform group make all three
+// section columns the same width so the sections sit balanced/centered.
+// Row 1 also expands vertically so the sections occupy the body of the
+// window rather than hugging the top.
+foreach ([0, 1, 2] as $c) {
+    $tcl->evalTcl("grid columnconfigure {$window->getTclPath()} {$c} -weight 1 -uniform sections");
+}
+$tcl->evalTcl("grid rowconfigure {$window->getTclPath()} 1 -weight 1");
+
+
+// ---------- Title ------------------------------------------------------------
+
+$title = new Label($wid, [
+    'text' => 'PHP GUI — Widget Showcase',
+    'font' => 'Helvetica 18 bold',
+    'fg'   => '#1976D2',
+]);
+$title->grid(['row' => 0, 'column' => 0, 'columnspan' => 3, 'pady' => 12]);
+
+
+// ---------- Status bar (declared early so callbacks can capture it) ----------
+
+$status = new Label($wid, [
+    'text'   => 'Ready — interact with any widget to see updates here.',
+    'font'   => 'Arial 10 italic',
+    'fg'     => '#444',
+    'bg'     => '#f5f5f5',
+    'relief' => 'sunken',
+    'padx'   => 10,
+    'pady'   => 6,
 ]);
 
-// Label Example
-$label = new Label($window->getId(), [
-    'text' => 'Hello, PHP GUI World!'
+
+// ---------- Helper: a section Frame with a bold header label inside ----------
+
+$buildSection = function (string $headerText, int $col) use ($wid): Frame {
+    $frame = new Frame($wid);
+    // sticky 'n' (top, no horizontal stretch) keeps the frame compact and
+    // centered inside its equally-weighted grid column.
+    $frame->grid([
+        'row'    => 1,
+        'column' => $col,
+        'sticky' => 'n',
+        'padx'   => 10,
+        'pady'   => 10,
+    ]);
+
+    $header = new Label($frame->getId(), [
+        'text' => $headerText,
+        'font' => 'Arial 12 bold',
+        'fg'   => '#333',
+    ]);
+    $header->pack(['pady' => 6]);
+
+    return $frame;
+};
+
+
+// ---------- Section: Buttons & Inputs ----------------------------------------
+
+$inputs = $buildSection('Buttons & Inputs', 0);
+
+$styledButton = new Button($inputs->getId(), [
+    'text'    => 'Styled Button',
+    'bg'      => '#1976D2',
+    'fg'      => 'white',
+    'font'    => 'Helvetica 12 bold',
+    'command' => fn() => $status->setText('Styled Button clicked!'),
 ]);
-$label->pack(['pady' => 20]);
+$styledButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
 
-
-// Extra styled Button example
-$styledButton = new Button($window->getId(), [
-    'text'  => 'Styled Button',
-    'command' => function () use ($label) {
-        echo "Styled Button clicked!\n";
-        $label->setText('Styled Button clicked!');
-    },
-    'bg'    => 'blue',
-    'fg'    => 'white',
-    'font'  => 'Helvetica 16 bold'
-]);
-$styledButton->pack(['pady' => 10]);
-
-// New Input widget example with extra configuration
-$input = new Input($window->getId(), [
-    'text'  => 'Type here...',
-    'bg'    => 'lightyellow',
-    'fg'    => 'black',
-    'font'  => 'Arial 14'
-]);
-$input->pack(['pady' => 10]);
-
-// Register event listener for Enter key on the input widget
-$input->onEnter(function () use ($input) {
-    echo "Input Enter Pressed: " . $input->getValue() . "\n";
-});
-
-
-$styledLabel = new Label($window->getId(), [
-    'text' => 'This is a styled label with custom colors',
-    'fg' => 'white',
-    'bg' => '#4CAF50',
+$input = new Input($inputs->getId(), [
+    'text' => 'Type and press Enter…',
+    'bg'   => 'lightyellow',
     'font' => 'Arial 12',
-    'padx' => 10,
-    'pady' => 5,
-    'relief' => 'raised'
 ]);
-$styledLabel->pack(['pady' => 5]);
+$input->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
+$input->onEnter(fn() => $status->setText('Input received: ' . $input->getValue()));
 
-// Dynamic Label update example
-$dynamicLabel = new Label($window->getId(), [
-    'text' => 'Dynamic Lable',
-    'font' => 'Arial 11 italic',
-    'fg' => '#666666'
+$styledLabel = new Label($inputs->getId(), [
+    'text'   => 'Styled label',
+    'fg'     => 'white',
+    'bg'     => '#4CAF50',
+    'font'   => 'Arial 11',
+    'padx'   => 10,
+    'pady'   => 5,
+    'relief' => 'raised',
 ]);
-$dynamicLabel->pack(['pady' => 5]);
+$styledLabel->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
 
-// Button to demonstrate label updates
-$updateButton = new Button($window->getId(), [
-    'text' => 'Update Labels',
-    'command' => function () use ($dynamicLabel, $styledLabel) {
-        $dynamicLabel->setText('Label text updated!');
-        $dynamicLabel->setForeground('#009688');
+$updateButton = new Button($inputs->getId(), [
+    'text'    => 'Update Labels',
+    'command' => function () use ($styledLabel, $status) {
         $styledLabel->setBackground('#2196F3');
-        $styledLabel->setText('Colors and text can be changed dynamically');
-    }
+        $styledLabel->setText('Colors and text updated dynamically');
+        $status->setText('Labels updated.');
+    },
 ]);
-$updateButton->pack(['pady' => 5]);
+$updateButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
 
 
-// Menu Examples
-$mainMenu = new Menu($window->getId(), ['type' => 'main']);
+// ---------- Section: Image ---------------------------------------------------
 
-// File Menu
-$fileMenu = $mainMenu->addSubmenu('File');
-$fileMenu->addCommand('New', function () use ($dynamicLabel) {
-    $dynamicLabel->setText('New File Selected');
-});
-$fileMenu->addCommand('Open', function () use ($dynamicLabel) {
-    $dynamicLabel->setText('Open Selected');
-});
-$fileMenu->addSeparator();
-$fileMenu->addCommand('Exit', function () {
-    exit();
-}, ['foreground' => 'red']);
+$imageSection = $buildSection('Image (animated GIF)', 1);
 
-// Edit Menu
-$editMenu = $mainMenu->addSubmenu('Edit');
-$editMenu->addCommand('Copy', function () use ($styledLabel) {
-    $styledLabel->setText('Copy Selected');
-});
-$editMenu->addCommand('Paste', function () use ($styledLabel) {
-    $styledLabel->setText('Paste Selected');
-});
+$gifPath = __DIR__ . '/assets/happy-cat.gif';
+$jpgPath = __DIR__ . '/tests/widgets_test/image/example.jpg';
+$pngPath = __DIR__ . '/assets/example.png';
+$initialPath = is_file($gifPath) ? $gifPath : $pngPath;
 
-// Help Menu with Nested Submenu
-$helpMenu = $mainMenu->addSubmenu('Help');
-$aboutMenu = $helpMenu->addSubmenu('About');
-$aboutMenu->addCommand('Version', function () use ($dynamicLabel) {
-    $dynamicLabel->setText('Version 1.0');
-});
-
-// TopLevel Examples
-$topLevelButton = new Button($window->getId(), [
-    'text' => 'Open New Window',
-    'command' => function () use ($dynamicLabel) {
-        $topLevel = new TopLevel([
-            'title' => 'New Window Example',
-            'width' => 300,
-            'height' => 200
-        ]);
-
-        // Add content to TopLevel
-        $label = new Label($topLevel->getId(), [
-            'text' => 'This is a new window',
-            'font' => 'Arial 14'
-        ]);
-        $label->pack(['pady' => 20]);
-
-        $closeBtn = new Button($topLevel->getId(), [
-            'text' => 'Close Window',
-            'command' => function () use ($topLevel, $dynamicLabel) {
-                $dynamicLabel->setText('TopLevel window closed');
-                $topLevel->destroy();
-            }
-        ]);
-        $closeBtn->pack(['pady' => 10]);
-
-        $minimizeBtn = new Button($topLevel->getId(), [
-            'text' => 'Minimize',
-            'command' => function () use ($topLevel) {
-                $topLevel->iconify();
-            }
-        ]);
-        $minimizeBtn->pack(['pady' => 10]);
-
-        $dynamicLabel->setText('New window opened');
-    }
+$logo = new Image($imageSection->getId(), [
+    'path'   => $initialPath,
+    'relief' => 'sunken',
+    'padx'   => 4,
+    'pady'   => 4,
 ]);
-$topLevelButton->pack(['pady' => 10]);
+$logo->pack(['pady' => 6]);
 
-// Dialog Examples
-$dialogsLabel = new Label($window->getId(), [
-    'text' => 'Dialog Examples:',
-    'font' => 'Arial 12 bold'
+$logoInfo = new Label($imageSection->getId(), [
+    'text' => $logo->isAnimated()
+        ? sprintf('Animated — %d frames', $logo->getFrameCount())
+        : 'Static image',
+    'font' => 'Arial 10',
+    'fg'   => '#666',
 ]);
-$dialogsLabel->pack(['pady' => 5]);
+$logoInfo->pack(['pady' => 2]);
 
-// Color Picker Dialog
-$colorButton = new Button($window->getId(), [
-    'text' => 'Choose Color',
-    'command' => function () use ($dynamicLabel) {
+$swapImageButton = new Button($imageSection->getId(), [
+    'text'    => 'Swap to JPG',
+    'command' => function () use ($logo, $logoInfo, $jpgPath, $status) {
+        if (!is_file($jpgPath)) {
+            $status->setText('Skipped — JPG fixture not found.');
+            return;
+        }
+        $logo->setPath($jpgPath);
+        $logoInfo->setText('Static image (transcoded via GD)');
+        $status->setText("Swapped to JPG — {$logo->getWidth()}x{$logo->getHeight()}");
+    },
+]);
+$swapImageButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
+
+$restoreImageButton = new Button($imageSection->getId(), [
+    'text'    => 'Restore animated GIF',
+    'command' => function () use ($logo, $logoInfo, $gifPath, $status) {
+        if (!is_file($gifPath)) {
+            $status->setText('Skipped — GIF asset not found.');
+            return;
+        }
+        $logo->setPath($gifPath);
+        $logoInfo->setText(sprintf('Animated — %d frames', $logo->getFrameCount()));
+        $status->setText('Animation restored.');
+    },
+]);
+$restoreImageButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
+
+
+// ---------- Section: Dialogs & Windows ---------------------------------------
+
+$dialogs = $buildSection('Dialogs & Windows', 2);
+
+$colorButton = new Button($dialogs->getId(), [
+    'text'    => 'Choose Color',
+    'command' => function () use ($status) {
         try {
             $color = TopLevel::chooseColor();
             if ($color) {
-                echo "Selected color: $color\n";
-                $dynamicLabel->setText("Selected color: $color");
-                $dynamicLabel->setForeground($color);
+                $status->setText("Selected color: {$color}");
+                $status->setForeground($color);
             }
         } catch (\Exception $e) {
-            echo "Error: " . $e->getMessage() . "\n";
+            $status->setText('Error: ' . $e->getMessage());
         }
-    }
+    },
 ]);
-$colorButton->pack(['pady' => 5]);
+$colorButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
 
-// File Selection Dialog
-$fileButton = new Button($window->getId(), [
-    'text' => 'Open File',
-    'command' => function () use ($dynamicLabel) {
+$fileButton = new Button($dialogs->getId(), [
+    'text'    => 'Open File',
+    'command' => function () use ($status) {
         $file = TopLevel::getOpenFile();
         if ($file) {
-            $dynamicLabel->setText("Selected file: " . basename($file));
+            $status->setText('Selected file: ' . basename($file));
         }
-    }
+    },
 ]);
-$fileButton->pack(['pady' => 5]);
+$fileButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
 
-// Directory Selection Dialog 
-$dirButton = new Button($window->getId(), [
-    'text' => 'Choose Directory',
-    'command' => function () use ($dynamicLabel) {
+$dirButton = new Button($dialogs->getId(), [
+    'text'    => 'Choose Directory',
+    'command' => function () use ($status) {
         try {
             $dir = TopLevel::chooseDirectory();
             if ($dir) {
-                echo "Selected directory: $dir\n";
-                $dynamicLabel->setText("Selected directory: " . basename($dir));
+                $status->setText('Selected directory: ' . basename($dir));
             }
         } catch (\Exception $e) {
-            echo "Error: " . $e->getMessage() . "\n";
+            $status->setText('Error: ' . $e->getMessage());
         }
-    }
+    },
 ]);
-$dirButton->pack(['pady' => 5]);
+$dirButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
 
-// Message Box Example
-$msgButton = new Button($window->getId(), [
-    'text' => 'Show Message',
-    'command' => function () use ($dynamicLabel) {
-        $result = TopLevel::messageBox("This is a test message", "okcancel");
-        $dynamicLabel->setText("Message result: $result");
-    }
+$msgButton = new Button($dialogs->getId(), [
+    'text'    => 'Show Message',
+    'command' => function () use ($status) {
+        $result = TopLevel::messageBox('This is a test message', 'okcancel');
+        $status->setText("Message result: {$result}");
+    },
 ]);
-$msgButton->pack(['pady' => 5]);
+$msgButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
+
+$topLevelButton = new Button($dialogs->getId(), [
+    'text'    => 'Open New Window',
+    'command' => function () use ($status) {
+        $top = new TopLevel([
+            'title'  => 'Secondary Window',
+            'width'  => 320,
+            'height' => 180,
+        ]);
+
+        $msg = new Label($top->getId(), [
+            'text' => 'This is a separate window.',
+            'font' => 'Arial 12',
+        ]);
+        $msg->pack(['pady' => 20]);
+
+        $closeBtn = new Button($top->getId(), [
+            'text'    => 'Close',
+            'command' => function () use ($top, $status) {
+                $top->destroy();
+                $status->setText('Secondary window closed.');
+            },
+        ]);
+        $closeBtn->pack(['pady' => 8]);
+
+        $minBtn = new Button($top->getId(), [
+            'text'    => 'Minimize',
+            'command' => fn() => $top->iconify(),
+        ]);
+        $minBtn->pack(['pady' => 4]);
+
+        $status->setText('Secondary window opened.');
+    },
+]);
+$topLevelButton->pack(['pady' => 4, 'fill' => 'x', 'padx' => 12]);
+
+
+// ---------- Status row at the bottom -----------------------------------------
+
+$status->grid([
+    'row'        => 2,
+    'column'     => 0,
+    'columnspan' => 3,
+    'sticky'     => 'ew',
+    'padx'       => 10,
+    'pady'       => 10,
+]);
+
+
+// ---------- Menu bar ---------------------------------------------------------
+
+$menu = new Menu($wid, ['type' => 'main']);
+
+$fileMenu = $menu->addSubmenu('File');
+$fileMenu->addCommand('New',  fn() => $status->setText('Menu: File → New'));
+$fileMenu->addCommand('Open', fn() => $status->setText('Menu: File → Open'));
+$fileMenu->addSeparator();
+$fileMenu->addCommand('Exit', fn() => exit(), ['foreground' => 'red']);
+
+$editMenu = $menu->addSubmenu('Edit');
+$editMenu->addCommand('Copy',  fn() => $status->setText('Menu: Edit → Copy'));
+$editMenu->addCommand('Paste', fn() => $status->setText('Menu: Edit → Paste'));
+
+$helpMenu  = $menu->addSubmenu('Help');
+$aboutMenu = $helpMenu->addSubmenu('About');
+$aboutMenu->addCommand('Version', fn() => $status->setText('php-gui — version 1.0'));
 
 
 $app->run();

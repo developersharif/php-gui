@@ -17,7 +17,7 @@ class Input extends AbstractWidget {
     protected function create(): void {
         $defaultText = $this->options['text'] ?? '';
         $extra = $this->getOptionString();
-        $this->tcl->evalTcl("entry .{$this->parentId}.{$this->id} -textvariable {$this->id} {$extra}");
+        $this->tcl->evalTcl("entry {$this->tclPath} -textvariable {$this->id} {$extra}");
         $this->tcl->evalTcl("set {$this->id} \"$defaultText\"");
     }
     
@@ -45,6 +45,6 @@ class Input extends AbstractWidget {
  
     public function onEnter(callable $callback): void {
         \PhpGui\ProcessTCL::getInstance()->registerCallback($this->id, $callback);
-        $this->tcl->evalTcl("bind .{$this->parentId}.{$this->id} <Return> {php::executeCallback {$this->id}}");
+        $this->tcl->evalTcl("bind {$this->tclPath} <Return> {php::executeCallback {$this->id}}");
     }
 }

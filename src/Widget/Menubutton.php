@@ -15,8 +15,9 @@ class Menubutton extends AbstractWidget {
 
     protected function create(): void {
         $text = $this->options['text'] ?? 'Menubutton';
-        $this->tcl->evalTcl("menubutton .{$this->parentId}.{$this->id} -text \"{$text}\"");
-        $this->tcl->evalTcl("menu .{$this->parentId}.m_{$this->id} -tearoff 0");
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -menu .{$this->parentId}.m_{$this->id}");
+        $menuPath = "{$this->parentTclPath}.m_{$this->id}";
+        $this->tcl->evalTcl("menubutton {$this->tclPath} -text \"{$text}\"");
+        $this->tcl->evalTcl("menu {$menuPath} -tearoff 0");
+        $this->tcl->evalTcl("{$this->tclPath} configure -menu {$menuPath}");
     }
 }

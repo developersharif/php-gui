@@ -18,7 +18,7 @@ class Combobox extends AbstractWidget {
         $values = $this->options['values'] ?? '';
         // Use -textvariable so getValue/setValue reflect the actual widget content.
         $this->tcl->evalTcl(
-            "ttk::combobox .{$this->parentId}.{$this->id} -textvariable {$this->id} -values {{$values}}"
+            "ttk::combobox {$this->tclPath} -textvariable {$this->id} -values {{$values}}"
         );
     }
 

@@ -115,7 +115,7 @@ Native widgets render as real OS controls using Tcl/Tk under the hood. The PHP A
 | `Menubutton` | Standalone menu button | [→](docs/Menubutton.md) |
 | `Canvas` | Drawing surface for shapes and images | [→](docs/Canvas.md) |
 | `Message` | Multi-line text display | [→](docs/Message.md) |
-| `Image` | Display images inside windows | — |
+| `Image` | Display images inside windows | [→](docs/Image.md) |
 
 ### Layout
 
