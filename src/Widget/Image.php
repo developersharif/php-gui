@@ -185,9 +185,18 @@ class Image extends AbstractWidget
         imagealphablending($gd, false);
         imagesavealpha($gd, true);
 
-        $tempPath = sys_get_temp_dir() . '/phpgui_img_' . uniqid('', true) . '.png';
+        // tempnam() guarantees a unique, writable path under the system
+        // temp dir without worrying about a missing trailing separator or
+        // a uniqid collision. Tk's photo loader sniffs the format from the
+        // file header, so the lack of a `.png` suffix is fine.
+        $tempPath = tempnam(sys_get_temp_dir(), 'phpgui_img_');
+        if ($tempPath === false) {
+            throw new \RuntimeException('Could not allocate a temp file for image transcode');
+        }
+
         $ok = @imagepng($gd, $tempPath);
         if (!$ok) {
+            @unlink($tempPath);
             throw new \RuntimeException("Could not write transcoded PNG to {$tempPath}");
         }
 
@@ -253,7 +262,7 @@ class Image extends AbstractWidget
             $f = $info['frames'][$i];
 
             if ($prev !== null) {
-                $this->applyDisposal($prev, $screenW, $screenH);
+                $this->applyDisposal($prev);
             }
 
             try {
@@ -321,7 +330,7 @@ class Image extends AbstractWidget
      *
      * @param array{x:int,y:int,w:int,h:int,disposal:int} $frame
      */
-    private function applyDisposal(array $frame, int $screenW, int $screenH): void
+    private function applyDisposal(array $frame): void
     {
         if ($frame['disposal'] !== 2) {
             return;
@@ -522,11 +531,17 @@ TCL
             if ($key === 'path') {
                 continue;
             }
-            // Quote the value as a Tcl brace-string. Braces preserve content
-            // verbatim and don't allow command/variable substitution. Escape
-            // any literal braces in the value to keep nesting balanced.
-            $safe  = str_replace(['{', '}'], ['\\{', '\\}'], (string) $value);
-            $opts .= " -{$key} {{$safe}}";
+            // Quote with `"` and escape the four characters Tcl interprets
+            // inside double quotes: backslash, dollar (var sub), open bracket
+            // (command sub), and closing quote. Brace-quoting was rejected
+            // because a trailing `\` in the value produces `{value\}`, where
+            // `\}` is read as a literal `}` and never closes the group.
+            $safe  = str_replace(
+                ['\\', '$', '[', '"'],
+                ['\\\\', '\\$', '\\[', '\\"'],
+                (string) $value
+            );
+            $opts .= " -{$key} \"{$safe}\"";
         }
         return $opts;
     }
