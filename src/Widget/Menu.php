@@ -32,7 +32,7 @@ class Menu extends AbstractWidget
         }
     }
 
-    public function addCommand(string $label, callable $callback = null, array $options = []): void
+    public function addCommand(string $label, ?callable $callback = null, array $options = []): void
     {
         $cmdOpts = ['-label ' . self::tclQuote($label)];
 

@@ -16,6 +16,8 @@
   - [Frame](Frame.md)
   - [Canvas](Canvas.md)
   - [Image](Image.md)
+  - [Text](Text.md)
+  - [Scrollbar](Scrollbar.md)
   - [Menu](Menu.md)
   - [Menubutton](Menubutton.md)
   - [Checkbutton](Checkbutton.md)

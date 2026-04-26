@@ -117,6 +117,12 @@ abstract class AbstractWidget
         return $this->tclPath;
     }
 
+    /** Bare ID of the parent widget, or null for top-level widgets. */
+    public function getParentId(): ?string
+    {
+        return $this->parentId;
+    }
+
     protected function formatOptions(array $options): string
     {
         $formatted = [];
