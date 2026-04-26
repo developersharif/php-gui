@@ -7,27 +7,37 @@ namespace PhpGui\Widget;
  *
  * @package PhpGui\Widget
  */
-class Message extends AbstractWidget {
-
-    public function __construct(?string $parentId, array $options = []) {
+class Message extends AbstractWidget
+{
+    public function __construct(?string $parentId, array $options = [])
+    {
         parent::__construct($parentId, $options);
         $this->create();
     }
-    
-    protected function create(): void {
-        $text = $this->options['text'] ?? 'Message';
-        $path = ".{$this->parentId}.{$this->id}";
+
+    protected function create(): void
+    {
+        $text = (string) ($this->options['text'] ?? 'Message');
+        $path = $this->tclPath;
         $this->tcl->evalTcl("toplevel {$path}");
         $this->tcl->evalTcl("wm title {$path} \"Message\"");
-        $this->tcl->evalTcl("label {$path}.msg -text \"{$text}\"");
+        $this->tcl->evalTcl(
+            "label {$path}.msg -text " . self::tclQuote($text)
+        );
         $this->tcl->evalTcl("pack {$path}.msg -padx 20 -pady 20");
+        // The destroy callback is hand-built Tcl, not user data, so it's
+        // safe to embed directly.
         $this->tcl->evalTcl("button {$path}.ok -text \"OK\" -command {destroy {$path}}");
         $this->tcl->evalTcl("pack {$path}.ok -pady 10");
         $this->tcl->evalTcl("update idletasks");
     }
 
-    public function setText(string $text): void {
-        $path = ".{$this->parentId}.{$this->id}";
-        $this->tcl->evalTcl("if {[winfo exists {$path}.msg]} { {$path}.msg configure -text \"{$text}\" }");
+    public function setText(string $text): void
+    {
+        $path = $this->tclPath;
+        $this->tcl->evalTcl(
+            "if {[winfo exists {$path}.msg]} { {$path}.msg configure -text "
+                . self::tclQuote($text) . ' }'
+        );
     }
 }

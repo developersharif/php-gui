@@ -7,16 +7,23 @@ namespace PhpGui\Widget;
  *
  * @package PhpGui\Widget
  */
-class Menubutton extends AbstractWidget {
-    public function __construct(string $parentId, array $options = []) {
+class Menubutton extends AbstractWidget
+{
+    public function __construct(string $parentId, array $options = [])
+    {
         parent::__construct($parentId, $options);
         $this->create();
     }
 
-    protected function create(): void {
-        $text = $this->options['text'] ?? 'Menubutton';
-        $this->tcl->evalTcl("menubutton .{$this->parentId}.{$this->id} -text \"{$text}\"");
-        $this->tcl->evalTcl("menu .{$this->parentId}.m_{$this->id} -tearoff 0");
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -menu .{$this->parentId}.m_{$this->id}");
+    protected function create(): void
+    {
+        $text     = (string) ($this->options['text'] ?? 'Menubutton');
+        $menuPath = "{$this->parentTclPath}.m_{$this->id}";
+
+        $this->tcl->evalTcl(
+            "menubutton {$this->tclPath} -text " . self::tclQuote($text)
+        );
+        $this->tcl->evalTcl("menu {$menuPath} -tearoff 0");
+        $this->tcl->evalTcl("{$this->tclPath} configure -menu {$menuPath}");
     }
 }

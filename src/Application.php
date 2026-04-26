@@ -20,29 +20,26 @@ class Application
     /** @var \PhpGui\Widget\WebView[] */
     private array $webviews = [];
 
-    /**
-     * Application constructor.
-     *
-     * Initializes the Tcl interpreter, configures the root window,
-     * and sets up the exit procedure using a quit signal file.
-     */
     public function __construct()
     {
         $this->tcl = ProcessTCL::getInstance();
         $this->appId = uniqid('app_');
-        $this->tcl->evalTcl("package require Tk");
-        $this->tcl->evalTcl("wm withdraw .");
+        $this->tcl->evalTcl('package require Tk');
+        $this->tcl->evalTcl('wm withdraw .');
 
-        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
-        $quitFile = $tempDir . "/phpgui_quit.txt";
-        $this->tcl->evalTcl("proc ::exit_app {} { set ::forever 1; set f [open \"$quitFile\" w]; puts \$f 1; close \$f }");
+        // Quit signal lives in a Tcl variable. The temp-file approach used
+        // before v1.9 added 100ms of polling latency and collided across
+        // concurrent php-gui processes (shared /tmp/phpgui_quit.txt).
+        $this->tcl->evalTcl('proc ::exit_app {} { set ::phpgui_quit 1 }');
     }
 
     /**
      * Runs the main event loop.
      *
-     * Processes Tcl events continuously, checks for callback and quit signals,
-     * and terminates the loop when a quit signal is received.
+     * Each iteration: pump Tcl events, drain queued PHP callbacks, drive
+     * any active WebView subprocesses, then sleep briefly. The sleep is
+     * deliberately short — a 100ms loop felt sluggish and dropped events
+     * when two fired within one tick.
      */
     public function run(): void
     {
@@ -54,47 +51,36 @@ class Application
 
         while ($this->running) {
             $this->tick();
-
-            // Adaptive sleep: faster when WebViews are active for better IPC responsiveness
-            usleep(!empty($this->webviews) ? 20000 : 100000);
+            // 10ms gives ~100Hz responsiveness without busy-looping. WebView
+            // mode polls subprocess pipes and benefits from the same cadence.
+            usleep(10000);
         }
         $this->quit();
     }
 
-    /**
-     * Register a WebView to be polled in the event loop.
-     */
     public function addWebView(\PhpGui\Widget\WebView $wv): void
     {
         $this->webviews[$wv->getId()] = $wv;
     }
 
-    /**
-     * Remove a WebView from the event loop.
-     */
     public function removeWebView(\PhpGui\Widget\WebView $wv): void
     {
         unset($this->webviews[$wv->getId()]);
     }
 
     /**
-     * Run a single iteration of the event loop (for testing).
+     * Run a single iteration of the event loop. Public for tests so they
+     * can step the loop deterministically without sleeping.
      */
     public function tick(): void
     {
-        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
-        $callbackFile = $tempDir . "/phpgui_callback.txt";
-        $quitFile = $tempDir . "/phpgui_quit.txt";
+        $this->tcl->evalTcl('update');
 
-        $this->tcl->evalTcl("update");
+        // Drain every queued callback, in order. The drain resets the
+        // queue first, so closures that fire new events don't race with us.
+        $this->tcl->drainPendingCallbacks();
 
-        if (file_exists($callbackFile)) {
-            $id = trim(file_get_contents($callbackFile));
-            unlink($callbackFile);
-            ProcessTCL::getInstance()->executeCallback($id);
-        }
-        if (file_exists($quitFile)) {
-            unlink($quitFile);
+        if ($this->tcl->shouldQuit()) {
             $this->running = false;
         }
 
@@ -107,13 +93,18 @@ class Application
         }
     }
 
+    /**
+     * Tear down the application. Closes WebViews and flips the run flag
+     * so the loop exits at its next iteration. Does NOT call `exit()` —
+     * `run()` returns to the caller, which can perform its own shutdown
+     * work (logging, cleanup) before the script ends.
+     */
     public function quit(): void
     {
         if (!$this->running) {
             return;
         }
 
-        // Close all WebView instances
         foreach ($this->webviews as $wv) {
             if (!$wv->isClosed()) {
                 $wv->destroy();
@@ -122,6 +113,5 @@ class Application
         $this->webviews = [];
 
         $this->running = false;
-        exit(0);
     }
 }

@@ -23,29 +23,20 @@ class Button extends AbstractWidget
 
     protected function create(): void
     {
-        $text = $this->options['text'] ?? 'Button';
-        $extra = $this->getOptionString();
+        $text  = (string) ($this->options['text'] ?? 'Button');
+        $extra = $this->buildOptionString(['text', 'command']);
+        $base  = "button {$this->tclPath} -text " . self::tclQuote($text) . $extra;
 
         if ($this->callback) {
             ProcessTCL::getInstance()->registerCallback($this->id, function () {
                 call_user_func($this->callback);
-                $this->tcl->evalTcl("update"); // Force widget updates
+                $this->tcl->evalTcl('update'); // Force widget updates
             });
-            $this->tcl->evalTcl("button .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra} -command {php::executeCallback {$this->id}}");
+            $this->tcl->evalTcl(
+                $base . ' -command {php::executeCallback ' . $this->id . '}'
+            );
         } else {
-            $this->tcl->evalTcl("button .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra}");
+            $this->tcl->evalTcl($base);
         }
-    }
-
-    protected function getOptionString(): string
-    {
-        $opts = "";
-        foreach ($this->options as $key => $value) {
-            if (in_array($key, ['text', 'command'])) {
-                continue;
-            }
-            $opts .= " -$key \"$value\"";
-        }
-        return $opts;
     }
 }

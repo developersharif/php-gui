@@ -313,28 +313,72 @@ class ProcessTCL
     /**
      * Defines the Tcl procedures required to call back into PHP.
      *
-     * Sets up the PHP namespace in Tcl and registers the procedure that writes
-     * the callback id to a temporary file.
+     * Each Tcl-side event handler (button -command, bind <Return>, menu
+     * commands, …) calls `php::executeCallback $id`, which lappends the
+     * id to the global `::phpgui_pending` list. The PHP event loop drains
+     * that list every tick via `drainPendingCallbacks()`. This avoids:
+     *   - the 100ms latency of polling a temp file;
+     *   - lost callbacks when two events fire within one tick;
+     *   - cross-process collisions on a shared `/tmp/phpgui_callback.txt`.
      *
      * @param mixed $interp The Tcl interpreter instance.
      */
     private function definePhpCallbackBridge($interp): void
     {
-        $tempDir = str_replace('\\', '/', sys_get_temp_dir());
-        $callbackFile = $tempDir . "/phpgui_callback.txt";
-
         $this->evalTcl('
             namespace eval php {
                 variable callbacks
                 array set callbacks {}
             }
+            set ::phpgui_pending {}
+            set ::phpgui_quit 0
         ');
-        $this->evalTcl("proc php::executeCallback {id} {
-                set f [open \"{$callbackFile}\" w]
-                puts \$f \$id
-                close \$f
-                update
-            }");
+        $this->evalTcl('proc php::executeCallback {id} {
+            lappend ::phpgui_pending $id
+        }');
+    }
+
+    /**
+     * Read the queue of callback ids the Tcl side has lappended since the
+     * last drain, clear it, and dispatch each callback in order.
+     *
+     * Resets the Tcl variable BEFORE running PHP closures so that a
+     * callback which itself triggers another Tk event (e.g. via an inner
+     * `update`) queues its id for the next drain rather than being lost
+     * when we overwrite the list.
+     *
+     * @return int Number of callbacks dispatched (useful for tests).
+     */
+    public function drainPendingCallbacks(): int
+    {
+        $pending = $this->getVar('::phpgui_pending');
+        if ($pending === '' || $pending === null) {
+            return 0;
+        }
+        $this->evalTcl('set ::phpgui_pending {}');
+
+        // Widget IDs are uniqid('w') (alphanumeric), so simple whitespace
+        // splitting is safe — no need to parse the Tcl-list grammar.
+        $ids = preg_split('/\s+/', trim((string) $pending)) ?: [];
+        $count = 0;
+        foreach ($ids as $id) {
+            if ($id === '') {
+                continue;
+            }
+            $this->executeCallback($id);
+            $count++;
+        }
+        return $count;
+    }
+
+    /**
+     * Returns true if the Tcl side has signalled application quit (the
+     * `::exit_app` proc set ::phpgui_quit). Defined here rather than on
+     * Application so subsystems can observe the same flag.
+     */
+    public function shouldQuit(): bool
+    {
+        return trim($this->getVar('::phpgui_quit')) === '1';
     }
 
     /**
@@ -356,7 +400,25 @@ class ProcessTCL
     public function registerCallback(string $id, callable $callback): void
     {
         $this->callbacks[$id] = $callback;
-        $this->evalTcl("set php::callbacks($id) 1");
+        $this->evalTcl("set php::callbacks({$id}) 1");
+    }
+
+    /**
+     * Removes a previously registered callback. Should be called when the
+     * widget that owns the callback is destroyed so closures (and the
+     * variables they captured) don't pile up for the lifetime of the
+     * process.
+     */
+    public function unregisterCallback(string $id): void
+    {
+        unset($this->callbacks[$id]);
+        // Best-effort: the Tcl-side bookkeeping may already be gone if the
+        // widget's parent was destroyed first.
+        try {
+            $this->evalTcl("array unset php::callbacks {$id}");
+        } catch (\Throwable) {
+            // Ignore.
+        }
     }
 
     /**

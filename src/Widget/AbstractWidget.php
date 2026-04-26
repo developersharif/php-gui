@@ -7,133 +7,179 @@ use PhpGui\ProcessTCL;
 /**
  * Class AbstractWidget
  *
- * Serves as the base for all UI widgets. It manages unique IDs,
- * provides Tcl command execution, and common layout methods (pack, place, grid).
+ * Serves as the base for all UI widgets. It manages unique IDs, full Tcl
+ * widget paths (so widgets can be nested arbitrarily deep), the Tcl
+ * interpreter handle, and the common layout methods (pack, place, grid).
+ *
+ * Tcl/Tk identifies widgets by dotted path (`.parent.child.grandchild`),
+ * not by ID alone. Each widget records its own full path on construction
+ * by looking up its parent in a process-wide registry; that lets a child
+ * built under a Frame which is itself under a Window receive the correct
+ * `.{window}.{frame}.{child}` path automatically.
  */
-abstract class AbstractWidget {
+abstract class AbstractWidget
+{
+    /** @var array<string, AbstractWidget> id → widget instance, used to resolve parent paths. */
+    private static array $registry = [];
+
     protected ProcessTCL $tcl;
     protected string $id;
-    protected ?string $parentId; // null for top-level widgets
+
+    /** Bare ID of the parent widget, or null for top-level widgets. Kept for back-compat. */
+    protected ?string $parentId;
+
+    /** Full Tcl path of the parent (e.g. `.w123.w456`). Empty string for top-level widgets. */
+    protected string $parentTclPath;
+
+    /** Full Tcl path of this widget (e.g. `.w123.w456.w789`). */
+    protected string $tclPath;
+
     protected array $options;
 
-    /**
-     * AbstractWidget constructor.
-     *
-     * Initializes the Tcl interface and assigns a unique widget ID.
-     * Normalizes the parent ID by removing any leading dot.
-     *
-     * @param string|null $parentId Parent widget ID or null for top-level widgets.
-     * @param array       $options  Widget configuration options.
-     */
-    public function __construct(?string $parentId, array $options = []) {
+    public function __construct(?string $parentId, array $options = [])
+    {
         $this->tcl = ProcessTCL::getInstance();
         $this->id = uniqid('w');
-        if ($parentId !== null) {
-            $this->parentId = ltrim($parentId, '.');
-        } else {
-            $this->parentId = null;
-        }
         $this->options = $options;
+
+        if ($parentId === null) {
+            $this->parentId      = null;
+            $this->parentTclPath = '';
+            $this->tclPath       = '.' . $this->id;
+        } else {
+            $this->parentId = ltrim($parentId, '.');
+            // Look up the parent in the registry to get its full Tcl path.
+            // If the parent isn't registered (e.g. a synthetic ID passed by
+            // older callers), fall back to treating the ID as a single-level
+            // path so existing single-nesting code keeps working.
+            $parent = self::$registry[$this->parentId] ?? null;
+            $this->parentTclPath = $parent !== null
+                ? $parent->tclPath
+                : '.' . $this->parentId;
+            $this->tclPath = $this->parentTclPath . '.' . $this->id;
+        }
+
+        self::$registry[$this->id] = $this;
     }
 
-    /**
-     * Creates the widget.
-     *
-     * Must be implemented by subclasses to define widget-specific creation logic.
-     *
-     * @return void
-     */
     abstract protected function create(): void;
 
-    /**
-     * Applies the pack layout to the widget.
-     *
-     * @param array $options Options for the pack geometry manager.
-     * @throws \RuntimeException if the widget is top-level.
-     * @return void
-     */
-    public function pack(array $options = []): void {
-        if ($this->parentId === null) {
-            throw new \RuntimeException("Cannot pack a top-level widget.");
-        }
-        $parent = '.' . $this->parentId;
-        $packCmd = "pack {$parent}.{$this->id}";
+    public function pack(array $options = []): void
+    {
+        $this->requireNonTopLevel('pack');
+        $cmd = "pack {$this->tclPath}";
         if (!empty($options)) {
-            $packCmd .= ' ' . $this->formatOptions($options);
+            $cmd .= ' ' . $this->formatOptions($options);
         }
-        $this->tcl->evalTcl($packCmd);
+        $this->tcl->evalTcl($cmd);
     }
 
-    /**
-     * Positions the widget absolutely using the place geometry manager.
-     *
-     * @param array $options Options for absolute positioning.
-     * @throws \RuntimeException if the widget is top-level.
-     * @return void
-     */
-    public function place(array $options = []): void {
-        if ($this->parentId === null) {
-            throw new \RuntimeException("Cannot place a top-level widget.");
-        }
-        $parent = '.' . $this->parentId;
-        $placeCmd = "place {$parent}.{$this->id}";
+    public function place(array $options = []): void
+    {
+        $this->requireNonTopLevel('place');
+        $cmd = "place {$this->tclPath}";
         if (!empty($options)) {
-            $placeCmd .= ' ' . $this->formatOptions($options);
+            $cmd .= ' ' . $this->formatOptions($options);
         }
-        $this->tcl->evalTcl($placeCmd);
+        $this->tcl->evalTcl($cmd);
     }
 
-    /**
-     * Positions the widget using the grid geometry manager.
-     *
-     * @param array $options Options for the grid geometry manager.
-     * @throws \RuntimeException if the widget is top-level.
-     * @return void
-     */
-    public function grid(array $options = []): void {
-        if ($this->parentId === null) {
-            throw new \RuntimeException("Cannot grid a top-level widget.");
-        }
-        $parent = '.' . $this->parentId;
-        $gridCmd = "grid {$parent}.{$this->id}";
+    public function grid(array $options = []): void
+    {
+        $this->requireNonTopLevel('grid');
+        $cmd = "grid {$this->tclPath}";
         if (!empty($options)) {
-            $gridCmd .= ' ' . $this->formatOptions($options);
+            $cmd .= ' ' . $this->formatOptions($options);
         }
-        $this->tcl->evalTcl($gridCmd);
+        $this->tcl->evalTcl($cmd);
     }
 
-    /**
-     * Destroys the widget.
-     *
-     * Removes the widget from the Tcl interpreter.
-     *
-     * @return void
-     */
-    public function destroy(): void {
-        $parent = '.' . $this->parentId;
-        $this->tcl->evalTcl("destroy {$parent}.{$this->id}");
+    public function destroy(): void
+    {
+        $this->tcl->evalTcl("destroy {$this->tclPath}");
+        // Best-effort: a widget that registered a callback under its own id
+        // (Button, Checkbutton, Input via onEnter) is freed here. Widgets
+        // that register additional ids (Menu's per-item ids) override this
+        // to clean those up too.
+        $this->tcl->unregisterCallback($this->id);
+        unset(self::$registry[$this->id]);
     }
 
-    /**
-     * Returns the widget's unique identifier.
-     *
-     * @return string The widget ID.
-     */
-    public function getId(): string {
+    /** Bare unique ID (used as a child's `$parentId` argument). */
+    public function getId(): string
+    {
         return $this->id;
     }
 
-    /**
-     * Formats layout options into a Tcl-compatible string.
-     *
-     * @param array $options Key-value pairs of options.
-     * @return string A space-separated string of formatted options.
-     */
-    protected function formatOptions(array $options): string {
+    /** Full Tcl widget path, e.g. `.w123.w456.w789`. */
+    public function getTclPath(): string
+    {
+        return $this->tclPath;
+    }
+
+    /** Bare ID of the parent widget, or null for top-level widgets. */
+    public function getParentId(): ?string
+    {
+        return $this->parentId;
+    }
+
+    protected function formatOptions(array $options): string
+    {
         $formatted = [];
         foreach ($options as $key => $value) {
             $formatted[] = "-$key $value";
         }
         return implode(' ', $formatted);
+    }
+
+    /**
+     * Quote a string for safe inclusion inside a Tcl command.
+     *
+     * Tcl interprets four characters inside a `"`-quoted word: backslash
+     * (escape), dollar (variable substitution), open bracket (command
+     * substitution), and the closing quote. Escape exactly those and the
+     * value can never break out of its quoting, so user-supplied text like
+     * `Hello"; destroy .; "` becomes a literal label rather than executing
+     * the embedded `destroy` command.
+     *
+     * Brace-quoting was rejected because a value ending in a backslash
+     * produces `{value\}` where `\}` reads as a literal `}` and never
+     * closes the group, raising "unbalanced braces" instead.
+     */
+    public static function tclQuote(string $value): string
+    {
+        $escaped = str_replace(
+            ['\\', '$', '[', '"'],
+            ['\\\\', '\\$', '\\[', '\\"'],
+            $value
+        );
+        return '"' . $escaped . '"';
+    }
+
+    /**
+     * Build the trailing `-key "value"` portion of a Tcl widget command
+     * from `$this->options`, skipping keys the caller handles separately.
+     * Every value is run through tclQuote() so user-supplied data can't
+     * inject arbitrary Tcl.
+     *
+     * @param list<string> $skip option keys handled by the caller
+     */
+    protected function buildOptionString(array $skip = []): string
+    {
+        $parts = [];
+        foreach ($this->options as $key => $value) {
+            if (in_array($key, $skip, true)) {
+                continue;
+            }
+            $parts[] = '-' . $key . ' ' . self::tclQuote((string) $value);
+        }
+        return $parts === [] ? '' : ' ' . implode(' ', $parts);
+    }
+
+    private function requireNonTopLevel(string $manager): void
+    {
+        if ($this->parentId === null) {
+            throw new \RuntimeException("Cannot {$manager} a top-level widget.");
+        }
     }
 }

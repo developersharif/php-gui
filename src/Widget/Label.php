@@ -18,43 +18,45 @@ class Label extends AbstractWidget
 
     protected function create(): void
     {
-        $text = $this->options['text'] ?? '';
-        $extra = $this->getOptionString();
-        $this->tcl->evalTcl("label .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra}");
-    }
-
-    protected function getOptionString(): string
-    {
-        $opts = "";
-        foreach ($this->options as $key => $value) {
-            if ($key === 'text') continue;
-            $opts .= " -$key \"$value\"";
-        }
-        return $opts;
+        $text = (string) ($this->options['text'] ?? '');
+        $extra = $this->buildOptionString(['text']);
+        $this->tcl->evalTcl(
+            "label {$this->tclPath} -text " . self::tclQuote($text) . $extra
+        );
     }
 
     public function setText(string $text): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -text \"{$text}\"");
+        $this->tcl->evalTcl(
+            "{$this->tclPath} configure -text " . self::tclQuote($text)
+        );
     }
 
     public function setFont(string $font): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -font \"{$font}\"");
+        $this->tcl->evalTcl(
+            "{$this->tclPath} configure -font " . self::tclQuote($font)
+        );
     }
 
     public function setForeground(string $color): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -fg \"{$color}\"");
+        $this->tcl->evalTcl(
+            "{$this->tclPath} configure -fg " . self::tclQuote($color)
+        );
     }
 
     public function setBackground(string $color): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -bg \"{$color}\"");
+        $this->tcl->evalTcl(
+            "{$this->tclPath} configure -bg " . self::tclQuote($color)
+        );
     }
 
     public function setState(string $state): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -state \"{$state}\"");
+        $this->tcl->evalTcl(
+            "{$this->tclPath} configure -state " . self::tclQuote($state)
+        );
     }
 }
