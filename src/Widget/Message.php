@@ -16,7 +16,7 @@ class Message extends AbstractWidget {
     
     protected function create(): void {
         $text = $this->options['text'] ?? 'Message';
-        $path = ".{$this->parentId}.{$this->id}";
+        $path = $this->tclPath;
         $this->tcl->evalTcl("toplevel {$path}");
         $this->tcl->evalTcl("wm title {$path} \"Message\"");
         $this->tcl->evalTcl("label {$path}.msg -text \"{$text}\"");
@@ -27,7 +27,7 @@ class Message extends AbstractWidget {
     }
 
     public function setText(string $text): void {
-        $path = ".{$this->parentId}.{$this->id}";
+        $path = $this->tclPath;
         $this->tcl->evalTcl("if {[winfo exists {$path}.msg]} { {$path}.msg configure -text \"{$text}\" }");
     }
 }

@@ -169,8 +169,4 @@ class TopLevel extends AbstractWidget
         $this->tcl->evalTcl(".{$this->id}.child configure -text \"{$text}\"");
     }
 
-    public function destroy(): void
-    {
-        $this->tcl->evalTcl("destroy .{$this->id}");
-    }
 }

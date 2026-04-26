@@ -31,9 +31,9 @@ class Button extends AbstractWidget
                 call_user_func($this->callback);
                 $this->tcl->evalTcl("update"); // Force widget updates
             });
-            $this->tcl->evalTcl("button .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra} -command {php::executeCallback {$this->id}}");
+            $this->tcl->evalTcl("button {$this->tclPath} -text \"{$text}\" {$extra} -command {php::executeCallback {$this->id}}");
         } else {
-            $this->tcl->evalTcl("button .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra}");
+            $this->tcl->evalTcl("button {$this->tclPath} -text \"{$text}\" {$extra}");
         }
     }
 

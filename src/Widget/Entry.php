@@ -16,7 +16,7 @@ class Entry extends AbstractWidget {
     protected function create(): void {
         $defaultText = $this->options['text'] ?? '';
         // Use -textvariable so getValue/setValue reflect the actual widget content.
-        $this->tcl->evalTcl("entry .{$this->parentId}.{$this->id} -textvariable {$this->id}");
+        $this->tcl->evalTcl("entry {$this->tclPath} -textvariable {$this->id}");
         $this->tcl->evalTcl("set {$this->id} \"$defaultText\"");
     }
 

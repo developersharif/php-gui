@@ -20,13 +20,16 @@ class Menu extends AbstractWidget
     {
         $extra = $this->getOptionString();
 
+        // Menus always live at the root path `.{$id}` regardless of where
+        // they are attached, so override the inherited tclPath.
+        $this->tclPath = ".{$this->id}";
+
         if ($this->type === 'main') {
-            // For main menu, attach directly to window
-            $this->tcl->evalTcl("menu .{$this->id} -tearoff 0 {$extra}");
-            $this->tcl->evalTcl(".{$this->parentId} configure -menu .{$this->id}");
+            // Attach to the parent window/toplevel using its full Tcl path.
+            $this->tcl->evalTcl("menu {$this->tclPath} -tearoff 0 {$extra}");
+            $this->tcl->evalTcl("{$this->parentTclPath} configure -menu {$this->tclPath}");
         } else {
-            // For submenus, use parent's path
-            $this->tcl->evalTcl("menu .{$this->id} -tearoff 0 {$extra}");
+            $this->tcl->evalTcl("menu {$this->tclPath} -tearoff 0 {$extra}");
         }
     }
 
@@ -88,13 +91,4 @@ class Menu extends AbstractWidget
         return implode(' ', $result);
     }
 
-    /**
-     * Destroys the menu widget.
-     * Menu creates its widget at `.{$id}` (not `.{$parent}.{$id}`), so we
-     * override the default AbstractWidget destroy path.
-     */
-    public function destroy(): void
-    {
-        $this->tcl->evalTcl("destroy .{$this->id}");
-    }
 }

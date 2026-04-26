@@ -20,7 +20,7 @@ class Label extends AbstractWidget
     {
         $text = $this->options['text'] ?? '';
         $extra = $this->getOptionString();
-        $this->tcl->evalTcl("label .{$this->parentId}.{$this->id} -text \"{$text}\" {$extra}");
+        $this->tcl->evalTcl("label {$this->tclPath} -text \"{$text}\" {$extra}");
     }
 
     protected function getOptionString(): string
@@ -35,26 +35,26 @@ class Label extends AbstractWidget
 
     public function setText(string $text): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -text \"{$text}\"");
+        $this->tcl->evalTcl("{$this->tclPath} configure -text \"{$text}\"");
     }
 
     public function setFont(string $font): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -font \"{$font}\"");
+        $this->tcl->evalTcl("{$this->tclPath} configure -font \"{$font}\"");
     }
 
     public function setForeground(string $color): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -fg \"{$color}\"");
+        $this->tcl->evalTcl("{$this->tclPath} configure -fg \"{$color}\"");
     }
 
     public function setBackground(string $color): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -bg \"{$color}\"");
+        $this->tcl->evalTcl("{$this->tclPath} configure -bg \"{$color}\"");
     }
 
     public function setState(string $state): void
     {
-        $this->tcl->evalTcl(".{$this->parentId}.{$this->id} configure -state \"{$state}\"");
+        $this->tcl->evalTcl("{$this->tclPath} configure -state \"{$state}\"");
     }
 }

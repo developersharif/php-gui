@@ -14,6 +14,6 @@ class Frame extends AbstractWidget {
     }
 
     protected function create(): void {
-        $this->tcl->evalTcl("frame .{$this->parentId}.{$this->id}");
+        $this->tcl->evalTcl("frame {$this->tclPath}");
     }
 }

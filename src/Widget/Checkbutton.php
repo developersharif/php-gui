@@ -27,9 +27,9 @@ class Checkbutton extends AbstractWidget
 
         if ($this->callback) {
             ProcessTCL::getInstance()->registerCallback($this->id, $this->callback);
-            $this->tcl->evalTcl("checkbutton .{$this->parentId}.{$this->id} -text \"{$text}\" -variable {$this->variable} -command {php::executeCallback {$this->id}} {$extra}");
+            $this->tcl->evalTcl("checkbutton {$this->tclPath} -text \"{$text}\" -variable {$this->variable} -command {php::executeCallback {$this->id}} {$extra}");
         } else {
-            $this->tcl->evalTcl("checkbutton .{$this->parentId}.{$this->id} -text \"{$text}\" -variable {$this->variable} {$extra}");
+            $this->tcl->evalTcl("checkbutton {$this->tclPath} -text \"{$text}\" -variable {$this->variable} {$extra}");
         }
     }
 

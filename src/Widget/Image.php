@@ -53,7 +53,7 @@ class Image extends AbstractWidget
         $this->createPhotoFromPath($this->loadedPath, $this->photoName);
 
         $extra = $this->getOptionString();
-        $this->tcl->evalTcl("label .{$this->parentId}.{$this->id} -image {$this->photoName}{$extra}");
+        $this->tcl->evalTcl("label {$this->tclPath} -image {$this->photoName}{$extra}");
 
         $this->maybeStartAnimation();
     }
@@ -297,7 +297,7 @@ class Image extends AbstractWidget
 
         $this->ensureAnimationProc();
 
-        $widgetPath = ".{$this->parentId}.{$this->id}";
+        $widgetPath = $this->tclPath;
         $delaysTcl  = '[list ' . implode(' ', array_map(static fn(array $f) => (int) $f['delay'], $info['frames'])) . ']';
         $framesTcl  = '[list ' . implode(' ', $framePhotos) . ']';
 
@@ -349,7 +349,7 @@ class Image extends AbstractWidget
 
     private function stopAnimation(): void
     {
-        $widgetPath = ".{$this->parentId}.{$this->id}";
+        $widgetPath = $this->tclPath;
         try {
             // Cancel the after, drop the per-instance Tcl state, and re-bind
             // the label to the main photo *before* freeing the frame photos.
