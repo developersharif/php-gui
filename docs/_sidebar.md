@@ -2,6 +2,8 @@
   - [Home](home.md)
   - [Installation](getting-started.md)
   - [Architecture](architecture.md)
+  - [Event Loop](event-loop.md)
+  - [Security](security.md)
 
 - **Widgets**
   - [Common Behaviours](widgets.md)
