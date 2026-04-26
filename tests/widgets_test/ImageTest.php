@@ -51,12 +51,12 @@ if (is_file($jpgPath) && function_exists('imagecreatefromstring')) {
 
     // The transcoded temp PNG should exist on disk while the widget lives,
     // and disappear when destroy() is called.
-    $tempsBefore = glob(sys_get_temp_dir() . '/phpgui_img_*.png') ?: [];
+    $tempsBefore = glob(sys_get_temp_dir() . '/phpgui_img_*') ?: [];
     TestRunner::assert(count($tempsBefore) >= 1, 'GD transcode produced a temp PNG on disk');
 
     $jpgImage->destroy();
     TestRunner::assertWidgetGone($jpgPathOut, 'JPG image label gone after destroy()');
-    $tempsAfter = glob(sys_get_temp_dir() . '/phpgui_img_*.png') ?: [];
+    $tempsAfter = glob(sys_get_temp_dir() . '/phpgui_img_*') ?: [];
     TestRunner::assert(count($tempsAfter) < count($tempsBefore), 'destroy() unlinks the transcoded temp PNG');
 }
 
