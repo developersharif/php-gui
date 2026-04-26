@@ -333,7 +333,11 @@ class ProcessTCL
             set ::phpgui_pending {}
             set ::phpgui_quit 0
         ');
-        $this->evalTcl('proc php::executeCallback {id} {
+        // The trailing `args` is variadic — Tk widgets like `scale` append the
+        // current value to their -command, and `validate` callbacks pass the
+        // entered text. Swallow whatever extras Tk hands us; the PHP closure
+        // looked up by `$id` reads any state it needs from the widget directly.
+        $this->evalTcl('proc php::executeCallback {id args} {
             lappend ::phpgui_pending $id
         }');
     }

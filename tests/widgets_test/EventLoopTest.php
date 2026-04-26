@@ -148,6 +148,23 @@ TestRunner::assertEqual(
     'second menu command callback freed by Menu::destroy()'
 );
 
+// ---- 7b. php::executeCallback swallows extra args (Tk scale/validate)  ----
+
+// Tk's `scale -command` appends the current value as an extra arg, e.g.
+// `php::executeCallback w123_change 49`. The proc must accept and ignore
+// trailing args so it doesn't raise "wrong # args".
+$tickFired = 0;
+$argTester = new Button($wid, [
+    'text'    => 'arg test',
+    'command' => function () use (&$tickFired) { $tickFired++; },
+]);
+TestRunner::assertNoThrow(
+    fn() => $tcl->evalTcl("php::executeCallback {$argTester->getId()} 49 extra"),
+    'php::executeCallback accepts extra trailing args without raising'
+);
+$tcl->drainPendingCallbacks();
+TestRunner::assertEqual(1, $tickFired, 'extra args do not prevent dispatch');
+
 // ---- 8. No /tmp file leakage from the new bridge ----------------------------
 
 $tmpCallback = sys_get_temp_dir() . '/phpgui_callback.txt';
