@@ -10,11 +10,17 @@
 
 <div style="display: flex; gap: 20px; text-align: left; margin: 30px auto; max-width: 800px; justify-content: center; flex-wrap: wrap;">
   <div style="flex: 1; min-width: 280px; padding: 20px; border-radius: 8px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);">
-    <h3 style="margin-top: 0;">🪟 Native Widgets</h3>
+    <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="3" rx="2"/><line x1="8" x2="16" y1="21" y2="21"/><line x1="12" x2="12" y1="17" y2="21"/></svg> 
+      Native Widgets
+    </h3>
     <p style="font-size: 0.9em; opacity: 0.9; margin-bottom: 0;">Fast, system-native UI controls (forms, dialogs, tools) using Tcl/Tk. Inspired by Python's Tkinter, built for modern PHP.</p>
   </div>
   <div style="flex: 1; min-width: 280px; padding: 20px; border-radius: 8px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);">
-    <h3 style="margin-top: 0;">🌐 WebView Mode</h3>
+    <h3 style="margin-top: 0; display: flex; align-items: center; gap: 8px;">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/><path d="M2 12h20"/></svg>
+      WebView Mode
+    </h3>
     <p style="font-size: 0.9em; opacity: 0.9; margin-bottom: 0;">Build beautiful, modern interfaces using HTML, CSS, and JS. Like Tauri, but tailored completely for PHP developers.</p>
   </div>
 </div>
