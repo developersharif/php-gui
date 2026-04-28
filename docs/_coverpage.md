@@ -1,38 +1,25 @@
 # PHP GUI
 
-## Build native desktop apps in pure PHP
+## Build native desktop apps with PHP — no Electron, no web server, no compromises.
 
-> Create cross-platform graphical interfaces using pure PHP &mdash; zero compiled extensions, zero massive browser engines.
+[![Latest Release](https://img.shields.io/github/v/release/developersharif/php-gui?style=flat-square)](https://github.com/developersharif/php-gui/releases) [![PHP](https://img.shields.io/badge/PHP-8.1%2B-blue?style=flat-square&logo=php)](https://php.net) [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20macOS%20%7C%20Windows-lightgrey?style=flat-square)](#platform-support)
 
-<p style="font-size: 0.85em; opacity: 0.7; margin-top: -12px; margin-bottom: 24px;">✨ Inspired by Python's Tkinter, built for modern PHP.</p>
-<div class="hero-mock-window" style="margin: 32px auto 40px; box-shadow: 0 35px 60px -15px rgba(0, 0, 0, 0.6); max-width: 780px; text-align: left; z-index: 10; position: relative;">
-  <div class="mock-titlebar">
-    <div class="mock-controls"><span></span><span></span><span></span></div>
-    <div class="mock-title">main.php - PHP GUI</div>
+> Create cross-platform desktop applications using pure PHP.
+
+<p style="font-size: 0.9em; opacity: 0.8; margin-top: -12px; margin-bottom: 24px;">PHP GUI offers two powerful ways to build desktop apps from the same codebase:</p>
+
+<div style="display: flex; gap: 20px; text-align: left; margin: 30px auto; max-width: 800px; justify-content: center; flex-wrap: wrap;">
+  <div style="flex: 1; min-width: 280px; padding: 20px; border-radius: 8px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);">
+    <h3 style="margin-top: 0;">🪟 Native Widgets</h3>
+    <p style="font-size: 0.9em; opacity: 0.9; margin-bottom: 0;">Fast, system-native UI controls (forms, dialogs, tools) using Tcl/Tk. Inspired by Python's Tkinter, built for modern PHP.</p>
   </div>
-  <div class="mock-content">
-    <div class="mock-editor">
-      <div class="mock-line"><span>1</span> <span class="kw">use</span> <span class="cl">PhpGui\Application</span>;</div>
-      <div class="mock-line"><span>2</span> <span class="kw">use</span> <span class="cl">PhpGui\Widget\Window</span>;</div>
-      <div class="mock-line"><span>3</span> <span class="kw">use</span> <span class="cl">PhpGui\Widget\Button</span>;</div>
-      <div class="mock-line"><span>4</span> </div>
-      <div class="mock-line"><span>5</span> <span class="va">$app</span> = <span class="kw">new</span> <span class="cl">Application</span>();</div>
-      <div class="mock-line"><span>6</span> <span class="va">$window</span> = <span class="kw">new</span> <span class="cl">Window</span>([<span class="st">'title'</span> => <span class="st">'Native UI'</span>]);</div>
-      <div class="mock-line"><span>7</span> </div>
-      <div class="mock-line"><span>8</span> <span class="va">$btn</span> = <span class="kw">new</span> <span class="cl">Button</span>(<span class="va">$window</span>, [<span class="st">'text'</span> => <span class="st">'Click Me!'</span>]);</div>
-      <div class="mock-line"><span>9</span> <span class="va">$btn</span>-><span class="fn">pack</span>();</div>
-      <div class="mock-line"><span>10</span> </div>
-      <div class="mock-line"><span>11</span> <span class="va">$app</span>-><span class="fn">run</span>();</div>
-    </div>
-    <div class="mock-gui-preview">
-      <div class="preview-titlebar">Native UI</div>
-      <div class="preview-body">
-        <button class="preview-btn">Click Me!</button>
-      </div>
-    </div>
+  <div style="flex: 1; min-width: 280px; padding: 20px; border-radius: 8px; background: rgba(0,0,0,0.05); border: 1px solid rgba(0,0,0,0.1);">
+    <h3 style="margin-top: 0;">🌐 WebView Mode</h3>
+    <p style="font-size: 0.9em; opacity: 0.9; margin-bottom: 0;">Build beautiful, modern interfaces using HTML, CSS, and JS. Like Tauri, but tailored completely for PHP developers.</p>
   </div>
 </div>
 
+<p style="font-size: 0.95em; margin-bottom: 40px;">✨ <strong>Zero system dependencies</strong> Works natively on <strong>Linux, macOS, and Windows</strong>.</p>
 
 [Get Started](getting-started.md)
 [View on GitHub](https://github.com/developersharif/php-gui)
