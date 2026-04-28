@@ -19,7 +19,7 @@
   </div>
 </div>
 
-<p style="font-size: 0.95em; margin-bottom: 40px;">✨ <strong>Zero system dependencies</strong> Works natively on <strong>Linux, macOS, and Windows</strong>.</p>
+<p style="font-size: 0.95em; margin-bottom: 40px;color: #dededeff;">✨ <strong>Zero system dependencies</strong> Works natively on <strong>Linux, macOS, and Windows</strong>.</p>
 
 [Get Started](getting-started.md)
 [View on GitHub](https://github.com/developersharif/php-gui)
